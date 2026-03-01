@@ -141,8 +141,9 @@ model AvailabilityException {
 // ─── Booking Models ───
 
 enum BookingStatus {
-  PENDING_PAYMENT
+  PENDING_UPLOAD
   PENDING_VERIFICATION
+  APPROVED
   CONFIRMED
   REJECTED
   CANCELLED
@@ -154,14 +155,46 @@ model Booking {
   instructorId  String
   date          DateTime      @db.Date
   startHour     Int           // 0-23
-  status        BookingStatus @default(PENDING_PAYMENT)
+  status        BookingStatus @default(PENDING_UPLOAD)
   notes         String?       @db.Text
 
   student    User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
   instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
 
+  uploadedDocument   UploadedDocument?
+  paymentTransaction PaymentTransaction?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([instructorId, date, startHour]) // Prevent double booking
+}
+
+model UploadedDocument {
+  id        String @id @default(cuid())
+  bookingId String @unique
+  fileName  String
+  fileType  String
+  fileSize  Int
+  s3Key     String
+  url       String
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model PaymentTransaction {
+  id                String  @id @default(cuid())
+  bookingId         String  @unique
+  stripeSessionId   String  @unique
+  stripePaymentIntent String?
+  amount            Float
+  currency          String  @default("cad")
+  status            String  @default("pending")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -117,7 +117,7 @@ export default function BookingForm({
         return;
       }
 
-      router.push(`/booking/confirmation?id=${data.bookingId}`);
+      router.push(`/booking/upload?id=${data.bookingId}`);
     } catch {
       setServerError("Something went wrong. Please try again.");
     } finally {

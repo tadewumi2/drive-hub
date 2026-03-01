@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         date: bookingDate,
         startHour,
         notes: notes || null,
-        status: "PENDING_VERIFICATION",
+        status: "PENDING_UPLOAD",
       },
     });
 

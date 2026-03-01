@@ -53,13 +53,17 @@ export default async function BookingConfirmationPage({
   });
 
   const statusLabels: Record<string, { label: string; color: string }> = {
-    PENDING_PAYMENT: {
-      label: "Pending Payment",
+    PENDING_UPLOAD: {
+      label: "Upload Required",
       color: "bg-amber-100 text-amber-700",
     },
     PENDING_VERIFICATION: {
       label: "Pending Verification",
       color: "bg-blue-100 text-blue-700",
+    },
+    APPROVED: {
+      label: "Approved — Payment Required",
+      color: "bg-emerald-100 text-emerald-700",
     },
     CONFIRMED: { label: "Confirmed", color: "bg-green-100 text-green-700" },
     REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700" },
@@ -172,17 +176,26 @@ export default async function BookingConfirmationPage({
 
           {/* Actions */}
           <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
-            <Link href="/dashboard/bookings" className="flex-1">
+          {booking.status === "PENDING_UPLOAD" && (
+            <a href={`/booking/upload?id=${booking.id}`} className="flex-1">
               <button className="w-full bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white font-semibold py-3 rounded-full transition-colors shadow-md shadow-amber-200/30 text-sm">
-                View My Bookings
+                Upload Road Test Proof
               </button>
-            </Link>
-            <Link href="/instructors" className="flex-1">
-              <button className="w-full border-2 border-[var(--navy)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white font-semibold py-3 rounded-full transition-all text-sm">
-                Book Another Lesson
+            </a>
+          )}
+          {booking.status === "APPROVED" && (
+            <a href={`/booking/payment?id=${booking.id}`} className="flex-1">
+              <button className="w-full bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white font-semibold py-3 rounded-full transition-colors shadow-md shadow-amber-200/30 text-sm">
+                Proceed to Payment
               </button>
-            </Link>
-          </div>
+            </a>
+          )}
+          <a href="/dashboard/bookings" className="flex-1">
+            <button className="w-full border-2 border-[var(--navy)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white font-semibold py-3 rounded-full transition-all text-sm">
+              View My Bookings
+            </button>
+          </a>
+        </div>
         </div>
       </main>
     </div>

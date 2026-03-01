@@ -29,7 +29,7 @@ export default async function UploadPage({ searchParams }: PageProps) {
       instructor: {
         include: { user: { select: { name: true } } },
       },
-      document: true,
+      uploadedDocument: true,
     },
   });
 
@@ -65,8 +65,8 @@ export default async function UploadPage({ searchParams }: PageProps) {
     }),
     time: `${formatHour(booking.startHour)} – ${formatHour(booking.startHour + 1)}`,
     hourlyRate: booking.instructor.hourlyRate,
-    hasDocument: !!booking.document,
-    documentName: booking.document?.fileName || null,
+    hasDocument: !!booking.uploadedDocument,
+    documentName: booking.uploadedDocument?.fileName || null,
     status: booking.status,
   };
 

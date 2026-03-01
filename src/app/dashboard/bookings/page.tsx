@@ -11,13 +11,17 @@ import {
 } from "@/components/ui/card";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  PENDING_PAYMENT: {
-    label: "Pending Payment",
+  PENDING_UPLOAD: {
+    label: "Upload Required",
     color: "bg-amber-100 text-amber-700",
   },
   PENDING_VERIFICATION: {
     label: "Pending Verification",
     color: "bg-blue-100 text-blue-700",
+  },
+  APPROVED: {
+    label: "Approved — Pay Now",
+    color: "bg-emerald-100 text-emerald-700",
   },
   CONFIRMED: { label: "Confirmed", color: "bg-green-100 text-green-700" },
   REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700" },

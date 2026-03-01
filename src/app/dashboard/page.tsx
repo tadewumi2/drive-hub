@@ -34,7 +34,7 @@ export default async function DashboardPage() {
       where: {
         studentId: session.user.id,
         date: { gte: today },
-        status: { in: ["CONFIRMED", "PENDING_VERIFICATION"] },
+        status: { in: ["CONFIRMED", "APPROVED", "PENDING_VERIFICATION"] },
       },
     }),
     prisma.booking.count({
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     prisma.booking.count({
       where: {
         studentId: session.user.id,
-        status: "PENDING_VERIFICATION",
+        status: { in: ["PENDING_UPLOAD", "PENDING_VERIFICATION"] },
       },
     }),
   ]);

@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import InstructorsList from "@/components/instructors/instructors-list";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Our Instructors - DriveHub",
+  description: "Browse qualified instructors and book your lesson",
+};
 
 export default async function InstructorsPage() {
   const instructors = await prisma.instructorProfile.findMany({

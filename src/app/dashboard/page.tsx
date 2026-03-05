@@ -11,6 +11,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard - DriveHub",
+  description: "View your upcoming lessons and manage your bookings",
+};
 
 export default async function DashboardPage() {
   const session = await auth();

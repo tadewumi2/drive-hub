@@ -221,6 +221,22 @@ async function main() {
     }
   }
 
+  // Create admin user
+  const adminPassword = await bcrypt.hash("Admin123!", 12);
+  await prisma.user.upsert({
+    where: { email: "admin@drivehub.com" },
+    update: {},
+    create: {
+      name: "Admin",
+      email: "admin@drivehub.com",
+      password: adminPassword,
+      role: "ADMIN",
+      emailVerified: new Date(),
+    },
+  });
+
+  console.log("  Created admin user (admin@drivehub.com / Admin123!)");
+
   console.log("Seeding complete!");
   console.log("Created " + profiles.length + " instructors with availability");
 }

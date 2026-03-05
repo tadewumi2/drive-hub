@@ -298,7 +298,7 @@ export default function InstructorProfileView({
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 overflow-x-auto">
             {/* Day headers */}
             {weekDays.map((day, i) => {
               const isToday = isSameDay(day, new Date());
@@ -344,7 +344,7 @@ export default function InstructorProfileView({
                         <button
                           key={hour}
                           onClick={() => handleSlotClick(day, hour)}
-                          className={`w-full text-xs font-medium py-2 rounded-lg transition-all ${
+                          className={`w-full text-[10px] sm:text-xs font-medium py-1.5 sm:py-2 rounded-lg transition-all ${
                             isSelected
                               ? "bg-[var(--gold)] text-white shadow-md shadow-amber-200/40"
                               : "bg-[var(--blue-softer)] text-[var(--navy)] hover:bg-[var(--gold-light)] hover:text-[var(--gold-hover)]"

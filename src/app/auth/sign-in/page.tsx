@@ -71,7 +71,17 @@ export default function SignInPage() {
         return;
       }
 
-      router.push("/dashboard");
+      // Get the session to check role
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+
+      if (session?.user?.role === "ADMIN") {
+        router.push("/admin");
+      } else if (session?.user?.role === "INSTRUCTOR") {
+        router.push("/instructor");
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch {
       setServerError("Something went wrong. Please try again.");

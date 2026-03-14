@@ -213,12 +213,12 @@ export default function HomePage() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="relative hidden lg:flex justify-end"
           >
-            <div className="relative w-[480px] h-[420px]">
+            <div className="relative w-135 h-90">
               <Image
-                src="https://images.unsplash.com/photo-1449965408869-ebd3fee7e536?w=800&h=600&fit=crop"
-                alt="Driving lesson"
+                src="/hero-image.png"
+                alt="Learn to drive - get your license with us"
                 fill
-                className="object-cover object-top rounded-3xl"
+                className="object-cover object-center rounded-3xl"
                 priority
               />
               {/* Map pin decorations */}

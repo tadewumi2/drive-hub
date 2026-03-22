@@ -85,27 +85,31 @@ export default function InstructorsList({
 }) {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const initialLocation = searchParams.get("location") || "";
+  const initialCarType = searchParams.get("carType") || "";
+  const initialDay = searchParams.get("day") || "";
 
   const [searchName, setSearchName] = useState(initialSearch);
-  const [selectedDay, setSelectedDay] = useState("");
+  const [selectedDay, setSelectedDay] = useState(initialDay);
   const [selectedHour, setSelectedHour] = useState("");
+  const [locationFilter] = useState(initialLocation);
+  const [carTypeFilter] = useState(initialCarType);
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
     return instructors.filter((inst) => {
       // Name search
-      if (
-        searchName &&
-        !inst.name.toLowerCase().includes(searchName.toLowerCase())
-      ) {
-        return false;
-      }
+      if (searchName && !inst.name.toLowerCase().includes(searchName.toLowerCase())) return false;
+
+      // Location filter
+      if (locationFilter && !inst.location.toLowerCase().includes(locationFilter.toLowerCase())) return false;
+
+      // Car type filter
+      if (carTypeFilter && !inst.carType.toLowerCase().includes(carTypeFilter.toLowerCase())) return false;
 
       // Day filter
       if (selectedDay) {
-        const hasDay = inst.availability.some(
-          (a) => a.dayOfWeek === selectedDay,
-        );
+        const hasDay = inst.availability.some((a) => a.dayOfWeek === selectedDay);
         if (!hasDay) return false;
       }
 
@@ -113,17 +117,14 @@ export default function InstructorsList({
       if (selectedHour) {
         const hour = parseInt(selectedHour);
         const hasHour = inst.availability.some(
-          (a) =>
-            a.startHour <= hour &&
-            a.endHour > hour &&
-            (!selectedDay || a.dayOfWeek === selectedDay),
+          (a) => a.startHour <= hour && a.endHour > hour && (!selectedDay || a.dayOfWeek === selectedDay),
         );
         if (!hasHour) return false;
       }
 
       return true;
     });
-  }, [instructors, searchName, selectedDay, selectedHour]);
+  }, [instructors, searchName, locationFilter, carTypeFilter, selectedDay, selectedHour]);
 
   const hasActiveFilters = selectedDay || selectedHour;
 

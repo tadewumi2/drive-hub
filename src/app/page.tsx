@@ -74,7 +74,20 @@ const features = [
 ];
 
 export default function HomePage() {
-  const [searchName, setSearchName] = useState("");
+  const [location, setLocation] = useState("");
+  const [lessonType, setLessonType] = useState("");
+  const [date, setDate] = useState("");
+
+  function handleSearch() {
+    const params = new URLSearchParams();
+    if (location.trim()) params.set("location", location.trim());
+    if (lessonType) params.set("carType", lessonType);
+    if (date) {
+      const day = new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+      params.set("day", day);
+    }
+    window.location.href = `/instructors${params.toString() ? "?" + params.toString() : ""}`;
+  }
 
   return (
     <div className="min-h-screen bg-white font-sans">
@@ -172,24 +185,39 @@ export default function HomePage() {
                 <input
                   type="text"
                   placeholder="Enter your location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="text-sm text-slate-700 placeholder:text-slate-400 bg-transparent outline-none w-full"
                 />
               </div>
-              <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 flex-1 border-r border-slate-100 cursor-pointer">
-                <span className="text-sm text-slate-400">
-                  Choose lesson type
-                </span>
-                <ChevronDown className="w-4 h-4 text-slate-400 ml-auto" />
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 flex-1 border-r border-slate-100">
+                <select
+                  value={lessonType}
+                  onChange={(e) => setLessonType(e.target.value)}
+                  className="text-sm text-slate-400 bg-transparent outline-none w-full cursor-pointer appearance-none"
+                >
+                  <option value="">Choose lesson type</option>
+                  <option value="Automatic">Automatic</option>
+                  <option value="Manual">Manual</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 pointer-events-none" />
               </div>
-              <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 flex-1 border-r border-slate-100 cursor-pointer">
-                <span className="text-sm text-slate-400">Select date</span>
-                <ChevronDown className="w-4 h-4 text-slate-400 ml-auto" />
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 flex-1 border-r border-slate-100">
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="text-sm text-slate-400 bg-transparent outline-none w-full cursor-pointer"
+                />
               </div>
-              <Link href="/instructors">
-                <button className="bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-colors whitespace-nowrap">
-                  Search Instructors
-                </button>
-              </Link>
+              <button
+                onClick={handleSearch}
+                className="bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-colors whitespace-nowrap"
+              >
+                Search Instructors
+              </button>
             </motion.div>
 
             {/* Trust Stats */}

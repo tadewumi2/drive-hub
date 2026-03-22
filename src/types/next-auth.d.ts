@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string;
       role: string;
       emailVerified: Date | null;
+      impersonatedBy?: string;
     } & DefaultSession["user"];
   }
 
@@ -19,5 +20,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     role?: string;
     emailVerified?: Date | null;
+    impersonatedBy?: string;
   }
 }

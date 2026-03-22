@@ -17,6 +17,7 @@ const navLinks = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/instructors", label: "Instructors" },
   { href: "/admin/bookings", label: "Bookings" },
+  { href: "/admin/users", label: "Users" },
 ];
 
 export default function AdminNav({ user }: AdminNavProps) {

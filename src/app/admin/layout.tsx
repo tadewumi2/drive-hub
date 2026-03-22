@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AdminNav from "@/components/admin/admin-nav";
+import ImpersonationBanner from "@/components/admin/impersonation-banner";
 
 export default async function AdminLayout({
   children,
@@ -13,7 +14,7 @@ export default async function AdminLayout({
     redirect("/auth/sign-in");
   }
 
-  if (session.user.role !== "ADMIN") {
+  if (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN") {
     redirect("/dashboard");
   }
 
@@ -23,6 +24,12 @@ export default async function AdminLayout({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+      {session.user.impersonatedBy && (
+        <ImpersonationBanner
+          impersonatedName={session.user.name ?? ""}
+          impersonatedEmail={session.user.email ?? ""}
+        />
+      )}
     </div>
   );
 }

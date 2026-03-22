@@ -20,6 +20,7 @@ export const authConfig = {
         session.user.id = token.sub!;
         session.user.role = token.role as string;
         session.user.emailVerified = token.emailVerified as Date | null;
+        session.user.impersonatedBy = token.impersonatedBy as string | undefined;
       }
       return session;
     },

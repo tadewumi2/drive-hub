@@ -182,6 +182,20 @@ async function main() {
     },
   });
 
+  // Create super admin user
+  const superAdminPassword = await bcrypt.hash("SuperAdmin1!", 12);
+  await prisma.user.upsert({
+    where: { email: "superadmin@drivehub.com" },
+    update: {},
+    create: {
+      name: "Super Admin",
+      email: "superadmin@drivehub.com",
+      password: superAdminPassword,
+      role: "SUPER_ADMIN" as "ADMIN",
+      emailVerified: new Date(),
+    },
+  });
+
   console.log("  Created admin user (admin@drivehub.com / Admin123!)");
 
   console.log("Seeding complete!");

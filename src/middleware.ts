@@ -32,26 +32,26 @@ export default auth((req) => {
     return NextResponse.redirect(signInUrl);
   }
 
+  const isSuperAdmin = role === "SUPER_ADMIN";
+
   // Redirect non-instructors away from instructor routes
-  if (isInstructorRoute && role !== "INSTRUCTOR" && role !== "ADMIN") {
+  if (isInstructorRoute && role !== "INSTRUCTOR" && role !== "ADMIN" && !isSuperAdmin) {
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
   }
   // Redirect non-admins away from admin routes
-  if (isAdminRoute && role !== "ADMIN") {
+  if (isAdminRoute && role !== "ADMIN" && !isSuperAdmin) {
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
   }
 
   // Redirect logged-in users away from auth routes
   if (isAuthRoute && isLoggedIn) {
-  if (role === "ADMIN") {
-    return NextResponse.redirect(new URL("/admin", req.nextUrl.origin));
-  }
-  if (role === "INSTRUCTOR") {
-    return NextResponse.redirect(
-      new URL("/instructor", req.nextUrl.origin)
-    );
-  }
-  return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
+    if (isSuperAdmin || role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin", req.nextUrl.origin));
+    }
+    if (role === "INSTRUCTOR") {
+      return NextResponse.redirect(new URL("/instructor", req.nextUrl.origin));
+    }
+    return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
   }
 
   return NextResponse.next();

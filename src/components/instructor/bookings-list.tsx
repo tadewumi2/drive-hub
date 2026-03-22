@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Filter, Navigation, Building2 } from "lucide-react";
 
@@ -16,6 +16,7 @@ interface Booking {
   pickupAddress: string | null;
   roadTestCenter: string | null;
   approvalDeadline: string | null;
+  approvalExtendedAt: string | null;
   createdAt: string;
 }
 
@@ -32,9 +33,12 @@ function formatHour(h: number): string {
   return `${hour}:00 ${period}`;
 }
 
-function getTimeLeft(deadline: string | null): string {
-  if (!deadline) return "";
-  const ms = new Date(deadline).getTime() - Date.now();
+function getMsLeft(deadline: string | null): number {
+  if (!deadline) return 0;
+  return new Date(deadline).getTime() - Date.now();
+}
+
+function formatTimeLeft(ms: number): string {
   if (ms <= 0) return "Expired";
   const min = Math.floor(ms / 60000);
   const sec = Math.floor((ms % 60000) / 1000);
@@ -45,6 +49,15 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
   const router = useRouter();
   const [filter, setFilter] = useState("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+
+  // Re-render every second so timeLeft and button visibility stay in sync
+  useEffect(() => {
+    const hasPending = bookings.some((b) => b.status === "PENDING_APPROVAL");
+    if (!hasPending) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [bookings]);
 
   const filtered =
     filter === "all"
@@ -106,11 +119,18 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
       ) : (
         <div className="space-y-4">
           {filtered.map((b) => {
-            const st = statusConfig[b.status] ?? statusConfig.PENDING_APPROVAL;
             const dateStr = new Date(b.date).toLocaleDateString("en-US", {
               weekday: "short", month: "short", day: "numeric", year: "numeric",
             });
-            const timeLeft = b.status === "PENDING_APPROVAL" ? getTimeLeft(b.approvalDeadline) : null;
+
+            const msLeft = b.status === "PENDING_APPROVAL" ? getMsLeft(b.approvalDeadline) : 1;
+            const isExpired = msLeft <= 0;
+            const timeLabel = isExpired ? "Expired" : formatTimeLeft(msLeft);
+
+            // Single badge: red "Expired" or amber "Needs Approval" with countdown
+            const badge = isExpired
+              ? { label: "Expired", color: "bg-red-100 text-red-600" }
+              : (statusConfig[b.status] ?? statusConfig.PENDING_APPROVAL);
 
             return (
               <div key={b.id} className="bg-white rounded-xl border border-slate-200 p-5">
@@ -118,16 +138,12 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h3 className="font-semibold text-slate-900">{b.studentName}</h3>
-                      <span className={`text-xs font-semibold px-3 py-1 rounded-full ${st.color}`}>
-                        {st.label}
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badge.color}`}>
+                        {badge.label}
                       </span>
-                      {timeLeft && (
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          timeLeft === "Expired"
-                            ? "bg-red-100 text-red-600"
-                            : "bg-amber-50 text-amber-600"
-                        }`}>
-                          ⏱ {timeLeft}
+                      {b.status === "PENDING_APPROVAL" && !isExpired && (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-50 text-amber-600">
+                          ⏱ {timeLabel}
                         </span>
                       )}
                     </div>
@@ -163,8 +179,8 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
                     )}
                   </div>
 
-                  {/* Approve action */}
-                  {b.status === "PENDING_APPROVAL" && (
+                  {/* Approve action — hidden once timer has expired */}
+                  {b.status === "PENDING_APPROVAL" && !isExpired && (
                     <div className="shrink-0">
                       <button
                         onClick={() => handleApprove(b.id)}

@@ -31,13 +31,8 @@ interface Props {
 export default function ApprovalCountdown({ bookingId, approvalDeadline, approvalExtendedAt }: Props) {
   const router = useRouter();
   const [msLeft, setMsLeft] = useState(() => getMsRemaining(approvalDeadline, approvalExtendedAt));
-  const [extending, setExtending] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState("");
-
-  const firstWindowExpired = approvalDeadline && Date.now() > new Date(approvalDeadline).getTime();
-  const alreadyExtended = !!approvalExtendedAt;
-  const canExtend = firstWindowExpired && !alreadyExtended && msLeft <= 0;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -47,24 +42,6 @@ export default function ApprovalCountdown({ bookingId, approvalDeadline, approva
     }, 1000);
     return () => clearInterval(interval);
   }, [approvalDeadline, approvalExtendedAt, router]);
-
-  async function handleExtend() {
-    setExtending(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/bookings/${bookingId}/extend`, { method: "POST" });
-      if (res.ok) {
-        router.refresh();
-      } else {
-        const d = await res.json();
-        setError(d.error || "Failed to extend");
-      }
-    } catch {
-      setError("Something went wrong");
-    } finally {
-      setExtending(false);
-    }
-  }
 
   async function handleCancel() {
     setCancelling(true);
@@ -85,6 +62,8 @@ export default function ApprovalCountdown({ bookingId, approvalDeadline, approva
   }
 
   const urgent = msLeft <= 5 * 60 * 1000;
+  const isSecondWindow = !!approvalExtendedAt;
+  const canCancel = isSecondWindow || msLeft <= 0;
 
   return (
     <div className="mt-3 space-y-2">
@@ -93,10 +72,10 @@ export default function ApprovalCountdown({ bookingId, approvalDeadline, approva
       }`}>
         <Clock className="w-3.5 h-3.5 shrink-0" />
         {msLeft > 0
-          ? `Waiting for instructor — ${formatTime(msLeft)} remaining`
-          : alreadyExtended
-            ? "Extended time expired — booking will be cancelled"
-            : "Time expired — extend or choose another instructor"}
+          ? isSecondWindow
+            ? `Final window — ${formatTime(msLeft)} remaining`
+            : `Waiting for instructor — ${formatTime(msLeft)} remaining`
+          : "Booking expired — booking will be auto-cancelled shortly"}
       </div>
 
       {error && (
@@ -105,25 +84,14 @@ export default function ApprovalCountdown({ bookingId, approvalDeadline, approva
         </p>
       )}
 
-      {msLeft <= 0 && (
-        <div className="flex gap-2">
-          {canExtend && (
-            <button
-              onClick={handleExtend}
-              disabled={extending}
-              className="flex-1 text-xs font-semibold border border-amber-400 text-amber-700 hover:bg-amber-50 py-2 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {extending ? "Extending..." : "Wait 30 More Mins"}
-            </button>
-          )}
-          <button
-            onClick={handleCancel}
-            disabled={cancelling}
-            className="flex-1 text-xs font-semibold border border-slate-300 text-slate-600 hover:bg-slate-50 py-2 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {cancelling ? "Cancelling..." : "Choose Another Instructor"}
-          </button>
-        </div>
+      {canCancel && (
+        <button
+          onClick={handleCancel}
+          disabled={cancelling}
+          className="w-full text-xs font-semibold border border-slate-300 text-slate-600 hover:bg-slate-50 py-2 rounded-lg transition-colors disabled:opacity-50"
+        >
+          {cancelling ? "Cancelling..." : "Choose Another Instructor"}
+        </button>
       )}
     </div>
   );

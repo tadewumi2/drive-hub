@@ -29,7 +29,11 @@ export function getExpiryState(booking: {
   return "ok";
 }
 
-/** Call this before reading any PENDING_APPROVAL booking. Auto-cancels if final window passed. */
+/**
+ * Call this on any PENDING_APPROVAL booking page load.
+ * - First window expired + not yet extended → auto-extend by 30 more mins
+ * - Second window also expired → auto-cancel (and refund if paid)
+ */
 export async function checkAndExpireBooking(bookingId: string): Promise<void> {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -44,9 +48,21 @@ export async function checkAndExpireBooking(bookingId: string): Promise<void> {
   if (!booking) return;
 
   const state = getExpiryState(booking);
+
+  if (state === "first_expired") {
+    // System automatically grants a second 30-minute window
+    const now = new Date();
+    const newDeadline = new Date(now.getTime() + APPROVAL_WINDOW_MS);
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { approvalExtendedAt: now, approvalDeadline: newDeadline },
+    });
+    return;
+  }
+
   if (state !== "final_expired") return;
 
-  // Auto-cancel and refund
+  // Auto-cancel
   await prisma.booking.update({
     where: { id: bookingId },
     data: { status: "CANCELLED" },
@@ -56,7 +72,6 @@ export async function checkAndExpireBooking(bookingId: string): Promise<void> {
     try {
       await processRefund(bookingId, "auto_expire");
     } catch {
-      // Payment may not exist or already refunded — log but don't throw
       console.error("Auto-expire refund failed for booking", bookingId);
     }
   }

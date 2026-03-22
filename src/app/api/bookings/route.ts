@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, getNewBookingRequestEmailHtml } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     // Verify instructor exists and is active
     const instructor = await prisma.instructorProfile.findUnique({
       where: { id: instructorId },
+      include: { user: { select: { name: true, email: true } } },
     });
 
     if (!instructor || !instructor.isActive) {
@@ -78,6 +80,29 @@ export async function POST(req: Request) {
         approvalDeadline,
       },
     });
+
+    // Notify instructor (fire-and-forget — don't block the response)
+    if (instructor.user.email) {
+      const dateStr = bookingDate.toLocaleDateString("en-US", {
+        weekday: "long", month: "long", day: "numeric", year: "numeric",
+      });
+      sendEmail({
+        to: instructor.user.email,
+        subject: "New Booking Request — Action Required",
+        html: getNewBookingRequestEmailHtml({
+          instructorName: instructor.user.name || "Instructor",
+          studentName: session.user.name || "A student",
+          studentEmail: session.user.email || "",
+          studentPhone: phone || "",
+          date: dateStr,
+          startHour,
+          pickupAddress: pickupAddress || null,
+          roadTestCenter: roadTestCenter || null,
+          notes: notes || null,
+          dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/instructor/bookings`,
+        }),
+      });
+    }
 
     return NextResponse.json(
       { bookingId: booking.id, message: "Booking created successfully" },

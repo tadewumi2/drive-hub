@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import InstructorBookingsList from "@/components/instructor/bookings-list";
+import { checkAndExpireBooking } from "@/lib/booking-expiry";
 
 export default async function InstructorBookingsPage() {
   const session = await auth();
@@ -22,7 +23,23 @@ export default async function InstructorBookingsPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const formatted = bookings.map((b) => ({
+  // Lazy-expire / auto-extend PENDING_APPROVAL bookings
+  await Promise.all(
+    bookings
+      .filter((b) => b.status === "PENDING_APPROVAL")
+      .map((b) => checkAndExpireBooking(b.id)),
+  );
+
+  // Re-fetch with fresh statuses and deadlines
+  const fresh = await prisma.booking.findMany({
+    where: { instructorId: profile.id },
+    include: {
+      student: { select: { name: true, email: true, phone: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const formatted = fresh.map((b) => ({
     id: b.id,
     studentName: b.student.name || "Unknown",
     studentEmail: b.student.email || "",
@@ -34,6 +51,7 @@ export default async function InstructorBookingsPage() {
     pickupAddress: b.pickupAddress,
     roadTestCenter: b.roadTestCenter,
     approvalDeadline: b.approvalDeadline?.toISOString() ?? null,
+    approvalExtendedAt: b.approvalExtendedAt?.toISOString() ?? null,
     createdAt: b.createdAt.toISOString(),
   }));
 

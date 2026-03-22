@@ -75,17 +75,22 @@ export async function POST(req: Request) {
       metadata: {
         bookingId: booking.id,
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/bookings`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/booking/payment-success?id=${booking.id}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/booking/payment?id=${booking.id}`,
     });
 
-    // Save payment record
-    await prisma.paymentTransaction.create({
-      data: {
+    // Save payment record (upsert in case student hits Pay Now more than once)
+    await prisma.paymentTransaction.upsert({
+      where: { bookingId: booking.id },
+      create: {
         bookingId: booking.id,
         stripeSessionId: checkoutSession.id,
         amount: booking.instructor.hourlyRate,
         currency: "cad",
+        status: "pending",
+      },
+      update: {
+        stripeSessionId: checkoutSession.id,
         status: "pending",
       },
     });

@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { BookingStatus } from "@prisma/client";
+import { sendEmail, getBookingApprovedEmailHtml } from "@/lib/email";
+import { getExpiryState } from "@/lib/booking-expiry";
 
 export async function POST(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -16,14 +19,18 @@ export async function POST(
 
     const booking = await prisma.booking.findUnique({
       where: { id },
-      include: { instructor: true },
+      include: {
+        instructor: {
+          include: { user: { select: { name: true } } },
+        },
+        student: { select: { name: true, email: true } },
+      },
     });
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Check if user is the instructor or admin
     if (
       booking.instructor.userId !== session.user.id &&
       session.user.role !== "ADMIN"
@@ -31,15 +38,13 @@ export async function POST(
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    if (booking.status !== "PENDING_APPROVAL") {
+    if (booking.status !== BookingStatus.PENDING_APPROVAL) {
       return NextResponse.json(
         { error: "Booking cannot be approved in its current state" },
         { status: 400 },
       );
     }
 
-    // Check approval window hasn't expired
-    const { getExpiryState } = await import("@/lib/booking-expiry");
     const state = getExpiryState(booking);
     if (state === "final_expired") {
       return NextResponse.json(
@@ -50,8 +55,29 @@ export async function POST(
 
     await prisma.booking.update({
       where: { id },
-      data: { status: "PENDING_PAYMENT" },
+      data: { status: BookingStatus.PENDING_PAYMENT },
     });
+
+    // Notify student
+    if (booking.student.email) {
+      const dateStr = booking.date.toLocaleDateString("en-US", {
+        weekday: "long", month: "long", day: "numeric", year: "numeric",
+      });
+      sendEmail({
+        to: booking.student.email,
+        subject: "Your Booking Was Approved — Complete Payment to Confirm",
+        html: getBookingApprovedEmailHtml({
+          studentName: booking.student.name || "Student",
+          instructorName: booking.instructor.user.name || "Your instructor",
+          date: dateStr,
+          startHour: booking.startHour,
+          pickupAddress: booking.pickupAddress,
+          roadTestCenter: booking.roadTestCenter,
+          hourlyRate: booking.instructor.hourlyRate,
+          paymentUrl: `${process.env.NEXT_PUBLIC_APP_URL}/booking/payment?id=${id}`,
+        }),
+      });
+    }
 
     return NextResponse.json({ message: "Booking approved — student can now pay" }, { status: 200 });
   } catch (error) {

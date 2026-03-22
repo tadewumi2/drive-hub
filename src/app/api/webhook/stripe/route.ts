@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, getBookingPaidEmailHtml } from "@/lib/email";
 import Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -37,6 +38,43 @@ export async function POST(req: Request) {
         where: { id: bookingId },
         data: { status: "CONFIRMED" },
       });
+
+      // Notify instructor
+      try {
+        const booking = await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: {
+            instructor: {
+              include: { user: { select: { name: true, email: true } } },
+            },
+            student: { select: { name: true, email: true, phone: true } },
+          },
+        });
+
+        if (booking?.instructor.user.email) {
+          const dateStr = booking.date.toLocaleDateString("en-US", {
+            weekday: "long", month: "long", day: "numeric", year: "numeric",
+          });
+          sendEmail({
+            to: booking.instructor.user.email,
+            subject: "Payment Received — Lesson Confirmed",
+            html: getBookingPaidEmailHtml({
+              instructorName: booking.instructor.user.name || "Instructor",
+              studentName: booking.student.name || "Student",
+              studentEmail: booking.student.email || "",
+              studentPhone: booking.student.phone || "",
+              date: dateStr,
+              startHour: booking.startHour,
+              pickupAddress: booking.pickupAddress,
+              roadTestCenter: booking.roadTestCenter,
+              hourlyRate: booking.instructor.hourlyRate,
+              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/instructor/bookings`,
+            }),
+          });
+        }
+      } catch (emailErr) {
+        console.error("Failed to send payment notification email:", emailErr);
+      }
     }
   }
 

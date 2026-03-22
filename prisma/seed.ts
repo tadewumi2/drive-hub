@@ -122,104 +122,51 @@ async function main() {
   });
   profiles.push(profile4);
 
-  // Availability schedules
-  const days = [
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY",
-    "SUNDAY",
-  ] as const;
+  // Availability schedules — clear and recreate for clean data
+  type Day =
+    | "MONDAY"
+    | "TUESDAY"
+    | "WEDNESDAY"
+    | "THURSDAY"
+    | "FRIDAY"
+    | "SATURDAY"
+    | "SUNDAY";
 
-  // Profile 1: Mon-Fri 9am-5pm
-  for (const day of days.slice(0, 5)) {
-    for (let hour = 9; hour < 17; hour++) {
-      await prisma.availabilityRule.upsert({
-        where: {
-          instructorId_dayOfWeek_startHour: {
-            instructorId: profile1.id,
-            dayOfWeek: day,
-            startHour: hour,
-          },
-        },
-        update: {},
-        create: {
-          instructorId: profile1.id,
-          dayOfWeek: day,
-          startHour: hour,
-          endHour: hour + 1,
-        },
-      });
+  async function setAvailability(
+    instructorId: string,
+    schedule: { days: readonly Day[]; startHour: number; endHour: number }[],
+  ) {
+    await prisma.availabilityRule.deleteMany({ where: { instructorId } });
+    for (const block of schedule) {
+      for (const day of block.days) {
+        for (let hour = block.startHour; hour < block.endHour; hour++) {
+          await prisma.availabilityRule.create({
+            data: { instructorId, dayOfWeek: day, startHour: hour, endHour: hour + 1 },
+          });
+        }
+      }
     }
   }
 
-  // Profile 2: Mon-Sat 8am-4pm
-  for (const day of days.slice(0, 6)) {
-    for (let hour = 8; hour < 16; hour++) {
-      await prisma.availabilityRule.upsert({
-        where: {
-          instructorId_dayOfWeek_startHour: {
-            instructorId: profile2.id,
-            dayOfWeek: day,
-            startHour: hour,
-          },
-        },
-        update: {},
-        create: {
-          instructorId: profile2.id,
-          dayOfWeek: day,
-          startHour: hour,
-          endHour: hour + 1,
-        },
-      });
-    }
-  }
+  // James: Mon–Fri 9am–5pm
+  await setAvailability(profile1.id, [
+    { days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], startHour: 9, endHour: 17 },
+  ]);
 
-  // Profile 3: Tue-Sat 10am-7pm
-  for (const day of [days[1], days[2], days[3], days[4], days[5]]) {
-    for (let hour = 10; hour < 19; hour++) {
-      await prisma.availabilityRule.upsert({
-        where: {
-          instructorId_dayOfWeek_startHour: {
-            instructorId: profile3.id,
-            dayOfWeek: day,
-            startHour: hour,
-          },
-        },
-        update: {},
-        create: {
-          instructorId: profile3.id,
-          dayOfWeek: day,
-          startHour: hour,
-          endHour: hour + 1,
-        },
-      });
-    }
-  }
+  // Sarah: Mon–Sat 8am–4pm
+  await setAvailability(profile2.id, [
+    { days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"], startHour: 8, endHour: 16 },
+  ]);
 
-  // Profile 4: Mon, Wed, Fri, Sat 9am-6pm
-  for (const day of [days[0], days[2], days[4], days[5]]) {
-    for (let hour = 9; hour < 18; hour++) {
-      await prisma.availabilityRule.upsert({
-        where: {
-          instructorId_dayOfWeek_startHour: {
-            instructorId: profile4.id,
-            dayOfWeek: day,
-            startHour: hour,
-          },
-        },
-        update: {},
-        create: {
-          instructorId: profile4.id,
-          dayOfWeek: day,
-          startHour: hour,
-          endHour: hour + 1,
-        },
-      });
-    }
-  }
+  // Michael: Tue–Sat 10am–7pm
+  await setAvailability(profile3.id, [
+    { days: ["TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"], startHour: 10, endHour: 19 },
+  ]);
+
+  // Emily: Mon, Wed, Fri, Sat 9am–6pm
+  await setAvailability(profile4.id, [
+    { days: ["MONDAY", "WEDNESDAY", "FRIDAY", "SATURDAY"], startHour: 9, endHour: 18 },
+  ]);
 
   // Create admin user
   const adminPassword = await bcrypt.hash("Admin123!", 12);

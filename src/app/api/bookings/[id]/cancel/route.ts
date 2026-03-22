@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -20,7 +20,7 @@ export async function POST(
       include: { paymentTransaction: true },
     });
 
-    if (!booking) {
+    if (!booking || booking.studentId !== session.user.id) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
@@ -28,17 +28,27 @@ export async function POST(
       return NextResponse.json({ error: "Booking is already cancelled" }, { status: 400 });
     }
 
-    await prisma.booking.update({ where: { id }, data: { status: "CANCELLED" } });
-
-    let refundInfo = null;
-    if (booking.paymentTransaction?.stripePaymentIntent) {
-      const reason = booking.status === "PENDING_APPROVAL" ? "pending_approval" : "admin_cancel";
-      refundInfo = await processRefund(id, reason);
+    if (!["PENDING_APPROVAL", "PENDING_PAYMENT", "CONFIRMED"].includes(booking.status)) {
+      return NextResponse.json(
+        { error: "This booking cannot be cancelled" },
+        { status: 400 },
+      );
     }
 
-    return NextResponse.json({ message: "Booking cancelled", refund: refundInfo });
+    await prisma.booking.update({ where: { id }, data: { status: "CANCELLED" } });
+
+    // Refund only if payment was actually made (CONFIRMED bookings)
+    let refundInfo = null;
+    if (booking.paymentTransaction?.status === "paid") {
+      refundInfo = await processRefund(id, "student_cancel");
+    }
+
+    return NextResponse.json({
+      message: "Booking cancelled",
+      refund: refundInfo,
+    });
   } catch (error) {
-    console.error("Admin cancel error:", error);
+    console.error("Cancel error:", error);
     return NextResponse.json({ error: "Failed to cancel booking" }, { status: 500 });
   }
 }

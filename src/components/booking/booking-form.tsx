@@ -13,6 +13,8 @@ import {
   Mail,
   Phone,
   FileText,
+  Navigation,
+  Building2,
   ArrowLeft,
 } from "lucide-react";
 
@@ -49,6 +51,8 @@ export default function BookingForm({
     name: student.name,
     email: student.email,
     phone: student.phone,
+    pickupAddress: "",
+    roadTestCenter: "",
     notes: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,9 +83,11 @@ export default function BookingForm({
 
   function validate() {
     const errs: Record<string, string> = {};
-    if (!formData.name.trim()) errs.name = "Name is required";
-    if (!formData.email.trim()) errs.email = "Email is required";
     if (!formData.phone.trim()) errs.phone = "Phone number is required";
+    if (!formData.pickupAddress.trim())
+      errs.pickupAddress = "Pickup address is required";
+    if (!formData.roadTestCenter.trim())
+      errs.roadTestCenter = "Road test center is required";
     return errs;
   }
 
@@ -107,6 +113,8 @@ export default function BookingForm({
           startHour: booking.hour,
           notes: formData.notes,
           phone: formData.phone,
+          pickupAddress: formData.pickupAddress,
+          roadTestCenter: formData.roadTestCenter,
         }),
       });
 
@@ -117,7 +125,7 @@ export default function BookingForm({
         return;
       }
 
-      router.push(`/booking/upload?id=${data.bookingId}`);
+      router.push(`/dashboard/bookings`);
     } catch {
       setServerError("Something went wrong. Please try again.");
     } finally {
@@ -127,7 +135,6 @@ export default function BookingForm({
 
   return (
     <div>
-      {/* Back link */}
       <button
         onClick={() => router.back()}
         className="flex items-center gap-2 text-sm text-slate-500 hover:text-[var(--navy)] mb-6 transition-colors"
@@ -161,7 +168,7 @@ export default function BookingForm({
                 )}
 
                 <div className="space-y-4">
-                  {/* Name */}
+                  {/* Name (read-only) */}
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-[var(--navy)] mb-1.5">
                       <User className="w-4 h-4 text-slate-400" />
@@ -171,16 +178,12 @@ export default function BookingForm({
                       type="text"
                       name="name"
                       value={formData.name}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30 focus:border-[var(--gold)] bg-slate-50"
                       readOnly
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm bg-slate-50 text-slate-500"
                     />
-                    {errors.name && (
-                      <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-                    )}
                   </div>
 
-                  {/* Email */}
+                  {/* Email (read-only) */}
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-[var(--navy)] mb-1.5">
                       <Mail className="w-4 h-4 text-slate-400" />
@@ -190,15 +193,9 @@ export default function BookingForm({
                       type="email"
                       name="email"
                       value={formData.email}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30 focus:border-[var(--gold)] bg-slate-50"
                       readOnly
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm bg-slate-50 text-slate-500"
                     />
-                    {errors.email && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {errors.email}
-                      </p>
-                    )}
                   </div>
 
                   {/* Phone */}
@@ -216,8 +213,48 @@ export default function BookingForm({
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30 focus:border-[var(--gold)]"
                     />
                     {errors.phone && (
+                      <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  {/* Pickup Address */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--navy)] mb-1.5">
+                      <Navigation className="w-4 h-4 text-slate-400" />
+                      Pickup Address
+                    </label>
+                    <input
+                      type="text"
+                      name="pickupAddress"
+                      value={formData.pickupAddress}
+                      onChange={handleChange}
+                      placeholder="123 Main St, Toronto, ON"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30 focus:border-[var(--gold)]"
+                    />
+                    {errors.pickupAddress && (
                       <p className="text-xs text-red-500 mt-1">
-                        {errors.phone}
+                        {errors.pickupAddress}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Road Test Center */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--navy)] mb-1.5">
+                      <Building2 className="w-4 h-4 text-slate-400" />
+                      Proposed Road Test Center
+                    </label>
+                    <input
+                      type="text"
+                      name="roadTestCenter"
+                      value={formData.roadTestCenter}
+                      onChange={handleChange}
+                      placeholder="e.g. Etobicoke DriveTest Centre"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30 focus:border-[var(--gold)]"
+                    />
+                    {errors.roadTestCenter && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.roadTestCenter}
                       </p>
                     )}
                   </div>
@@ -227,9 +264,7 @@ export default function BookingForm({
                     <label className="flex items-center gap-2 text-sm font-medium text-[var(--navy)] mb-1.5">
                       <FileText className="w-4 h-4 text-slate-400" />
                       Notes for Instructor
-                      <span className="text-slate-400 font-normal">
-                        (optional)
-                      </span>
+                      <span className="text-slate-400 font-normal">(optional)</span>
                     </label>
                     <textarea
                       name="notes"
@@ -247,9 +282,7 @@ export default function BookingForm({
                   disabled={loading}
                   className="w-full mt-6 bg-[var(--gold)] hover:bg-[var(--gold-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-full transition-colors shadow-lg shadow-amber-200/30 text-sm"
                 >
-                  {loading
-                    ? "Processing..."
-                    : `Confirm Booking — $${booking.hourlyRate}`}
+                  {loading ? "Submitting..." : `Request Booking — $${booking.hourlyRate}`}
                 </button>
               </div>
             </form>
@@ -262,7 +295,6 @@ export default function BookingForm({
                 Booking Summary
               </h2>
 
-              {/* Instructor */}
               <div className="flex items-center gap-3 pb-5 border-b border-slate-100">
                 <div className="relative w-12 h-12 rounded-full overflow-hidden bg-slate-100 shrink-0">
                   <Image
@@ -283,7 +315,6 @@ export default function BookingForm({
                 </div>
               </div>
 
-              {/* Details */}
               <div className="py-5 space-y-3 border-b border-slate-100">
                 <div className="flex items-center gap-3 text-sm">
                   <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
@@ -291,9 +322,7 @@ export default function BookingForm({
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="text-slate-600">
-                    {booking.hourFormatted} (1 hour)
-                  </span>
+                  <span className="text-slate-600">{booking.hourFormatted} (1 hour)</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Car className="w-4 h-4 text-slate-400 shrink-0" />
@@ -301,7 +330,6 @@ export default function BookingForm({
                 </div>
               </div>
 
-              {/* Price */}
               <div className="pt-5">
                 <div className="flex items-center justify-between text-sm text-slate-500">
                   <span>Lesson (1 hour)</span>
@@ -314,6 +342,10 @@ export default function BookingForm({
                   </span>
                 </div>
               </div>
+
+              <p className="text-xs text-slate-400 mt-4 text-center">
+                Your instructor has 30 mins to approve your request
+              </p>
             </div>
           </div>
         </div>

@@ -25,7 +25,7 @@ export default async function InstructorProfilePage({ params }: PageProps) {
       bookings: {
         where: {
           status: {
-            in: ["PENDING_UPLOAD", "PENDING_VERIFICATION", "APPROVED", "CONFIRMED"],
+            in: ["PENDING_PAYMENT", "PENDING_APPROVAL", "CONFIRMED"],
           },
         },
         select: {

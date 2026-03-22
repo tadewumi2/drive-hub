@@ -25,7 +25,6 @@ export async function POST(req: Request) {
     const bookingId = session.metadata?.bookingId;
 
     if (bookingId) {
-      // Update payment record
       await prisma.paymentTransaction.update({
         where: { stripeSessionId: session.id },
         data: {
@@ -34,7 +33,6 @@ export async function POST(req: Request) {
         },
       });
 
-      // Update booking status
       await prisma.booking.update({
         where: { id: bookingId },
         data: { status: "CONFIRMED" },

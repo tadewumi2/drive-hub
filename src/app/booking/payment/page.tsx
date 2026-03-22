@@ -29,7 +29,6 @@ export default async function PaymentPage({ searchParams }: PageProps) {
       instructor: {
         include: { user: { select: { name: true } } },
       },
-      uploadedDocument: true,
     },
   });
 
@@ -37,7 +36,7 @@ export default async function PaymentPage({ searchParams }: PageProps) {
     redirect("/dashboard");
   }
 
-  if (booking.status !== "APPROVED") {
+  if (booking.status !== "PENDING_PAYMENT") {
     redirect(`/booking/confirmation?id=${bookingId}`);
   }
 
@@ -61,8 +60,8 @@ export default async function PaymentPage({ searchParams }: PageProps) {
     }),
     time: `${formatHour(booking.startHour)} – ${formatHour(booking.startHour + 1)}`,
     hourlyRate: booking.instructor.hourlyRate,
-    hasDocument: !!booking.uploadedDocument,
-    documentName: booking.uploadedDocument?.fileName || null,
+    pickupAddress: booking.pickupAddress,
+    roadTestCenter: booking.roadTestCenter,
   };
 
   return (

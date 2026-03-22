@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { processRefund } from "@/lib/refund";
 
 export async function POST(
   req: Request,
@@ -17,43 +17,21 @@ export async function POST(
 
     const booking = await prisma.booking.findUnique({
       where: { id },
-      include: { payment: true },
+      include: { paymentTransaction: true },
     });
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    if (!booking.payment || booking.payment.status !== "paid") {
+    if (!booking.paymentTransaction || booking.paymentTransaction.status !== "paid") {
       return NextResponse.json(
         { error: "No payment found for this booking" },
         { status: 400 },
       );
     }
 
-    if (!booking.payment.stripePaymentIntent) {
-      return NextResponse.json(
-        { error: "No payment intent found" },
-        { status: 400 },
-      );
-    }
-
-    // Process refund through Stripe
-    await stripe.refunds.create({
-      payment_intent: booking.payment.stripePaymentIntent,
-    });
-
-    // Update records
-    await prisma.$transaction([
-      prisma.paymentTransaction.update({
-        where: { id: booking.payment.id },
-        data: { status: "refunded" },
-      }),
-      prisma.booking.update({
-        where: { id },
-        data: { status: "CANCELLED" },
-      }),
-    ]);
+    await processRefund(booking, "admin_cancel");
 
     return NextResponse.json(
       { message: "Refund processed successfully" },

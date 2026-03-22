@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 interface DashboardNavProps {
@@ -13,6 +14,13 @@ interface DashboardNavProps {
 }
 
 export default function DashboardNav({ user }: DashboardNavProps) {
+  const pathname = usePathname();
+
+  function navClass(href: string) {
+    const active = pathname === href;
+    return `text-sm font-medium transition-colors ${active ? "text-slate-900 border-b-2 border-slate-900 pb-0.5" : "text-slate-500 hover:text-slate-900"}`;
+  }
+
   return (
     <header className="bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,16 +33,10 @@ export default function DashboardNav({ user }: DashboardNavProps) {
               DriveHub
             </Link>
             <nav className="hidden md:flex items-center gap-6">
-              <Link
-                href="/dashboard"
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
-              >
+              <Link href="/dashboard" className={navClass("/dashboard")}>
                 Dashboard
               </Link>
-              <Link
-                href="/dashboard/bookings"
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
-              >
+              <Link href="/dashboard/bookings" className={navClass("/dashboard/bookings")}>
                 My Bookings
               </Link>
             </nav>

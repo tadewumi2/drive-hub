@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { signUpSchema } from "@/lib/validations/auth";
 import { sendEmail, getVerificationEmailHtml } from "@/lib/email";
+import { generateOTP } from "@/lib/otp";
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues[0].message },
+        { error: parsed.error.errors[0].message },
         { status: 400 },
       );
     }
@@ -26,6 +26,44 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
+      // If user exists but not verified, allow re-registration
+      if (!existingUser.emailVerified) {
+        // Update password in case they forgot it
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await prisma.user.update({
+          where: { email: normalizedEmail },
+          data: { name, password: hashedPassword },
+        });
+
+        // Delete old tokens
+        await prisma.verificationToken.deleteMany({
+          where: { identifier: normalizedEmail },
+        });
+
+        // Generate and send new OTP
+        const otp = generateOTP();
+        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await prisma.verificationToken.create({
+          data: {
+            identifier: normalizedEmail,
+            token: otp,
+            expires,
+          },
+        });
+
+        await sendEmail({
+          to: normalizedEmail,
+          subject: "Your DriveHub verification code",
+          html: getVerificationEmailHtml(name, otp),
+        });
+
+        return NextResponse.json(
+          { message: "Verification code sent to your email." },
+          { status: 201 },
+        );
+      }
+
       return NextResponse.json(
         { error: "An account with this email already exists" },
         { status: 409 },
@@ -36,7 +74,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name,
         email: normalizedEmail,
@@ -45,28 +83,36 @@ export async function POST(req: Request) {
       },
     });
 
-    // Generate verification token
-    const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Generate OTP
+    const otp = generateOTP();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await prisma.verificationToken.create({
       data: {
         identifier: normalizedEmail,
-        token,
+        token: otp,
         expires,
       },
     });
 
     // Send verification email
-    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}&email=${normalizedEmail}`;
-    await sendEmail({
+    const emailResult = await sendEmail({
       to: normalizedEmail,
-      subject: "Verify your DriveHub account",
-      html: getVerificationEmailHtml(name, verifyUrl),
+      subject: "Your DriveHub verification code",
+      html: getVerificationEmailHtml(name, otp),
     });
 
+    if (!emailResult.success) {
+      const errMsg = emailResult.error instanceof Error ? emailResult.error.message : JSON.stringify(emailResult.error);
+      console.error("Failed to send verification email:", errMsg);
+      return NextResponse.json(
+        { error: `Email failed: ${errMsg}` },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json(
-      { message: "Account created. Please check your email to verify." },
+      { message: "Account created. Verification code sent to your email." },
       { status: 201 },
     );
   } catch (error) {

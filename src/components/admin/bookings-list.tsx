@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Eye,
-  CheckCircle2,
-  XCircle,
   Ban,
   Loader2,
   Filter,
   RotateCcw,
+  Navigation,
+  Building2,
 } from "lucide-react";
 
 interface Booking {
@@ -22,9 +21,8 @@ interface Booking {
   startHour: number;
   status: string;
   notes: string | null;
-  hasDocument: boolean;
-  documentId: string | null;
-  documentName: string | null;
+  pickupAddress: string | null;
+  roadTestCenter: string | null;
   hourlyRate: number;
   paymentStatus: string | null;
   stripePaymentIntent: string | null;
@@ -32,18 +30,10 @@ interface Booking {
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  PENDING_UPLOAD: {
-    label: "Awaiting Upload",
-    color: "bg-slate-100 text-slate-600",
-  },
-  PENDING_VERIFICATION: {
-    label: "Needs Review",
-    color: "bg-amber-100 text-amber-700",
-  },
-  APPROVED: { label: "Approved", color: "bg-emerald-100 text-emerald-700" },
-  CONFIRMED: { label: "Confirmed", color: "bg-green-100 text-green-700" },
-  REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700" },
-  CANCELLED: { label: "Cancelled", color: "bg-slate-100 text-slate-500" },
+  PENDING_PAYMENT:  { label: "Awaiting Payment",  color: "bg-slate-100 text-slate-600"  },
+  PENDING_APPROVAL: { label: "Needs Approval",    color: "bg-amber-100 text-amber-700"  },
+  CONFIRMED:        { label: "Confirmed",          color: "bg-green-100 text-green-700"  },
+  CANCELLED:        { label: "Cancelled",          color: "bg-slate-100 text-slate-500"  },
 };
 
 function formatHour(h: number): string {
@@ -65,28 +55,8 @@ export default function AdminBookingsList({
     filter === "all"
       ? bookings
       : filter === "pending"
-        ? bookings.filter((b) => b.status === "PENDING_VERIFICATION")
+        ? bookings.filter((b) => b.status === "PENDING_APPROVAL")
         : bookings.filter((b) => b.status === filter.toUpperCase());
-
-  async function handleAction(bookingId: string, action: "approve" | "reject") {
-    setActionLoading(bookingId);
-    try {
-      const res = await fetch(
-        `/api/instructor/bookings/${bookingId}/${action}`,
-        { method: "POST" },
-      );
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || "Action failed");
-        return;
-      }
-      router.refresh();
-    } catch {
-      alert("Something went wrong");
-    } finally {
-      setActionLoading(null);
-    }
-  }
 
   async function handleCancel(bookingId: string) {
     if (!confirm("Are you sure you want to cancel this booking?")) return;
@@ -131,32 +101,16 @@ export default function AdminBookingsList({
     }
   }
 
-  async function handleViewDocument(documentId: string) {
-    try {
-      const res = await fetch(`/api/documents/${documentId}`);
-      const data = await res.json();
-      if (res.ok && data.url) {
-        window.open(data.url, "_blank");
-      } else {
-        alert("Failed to load document");
-      }
-    } catch {
-      alert("Failed to load document");
-    }
-  }
-
   return (
     <div>
       {/* Filters */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <Filter className="w-4 h-4 text-slate-400" />
         {[
-          { key: "all", label: "All" },
-          { key: "pending", label: "Needs Review" },
-          { key: "approved", label: "Approved" },
-          { key: "confirmed", label: "Confirmed" },
-          { key: "cancelled", label: "Cancelled" },
-          { key: "rejected", label: "Rejected" },
+          { key: "all",      label: "All"             },
+          { key: "pending",  label: "Needs Approval"  },
+          { key: "confirmed", label: "Confirmed"      },
+          { key: "cancelled", label: "Cancelled"      },
         ].map((f) => (
           <button
             key={f.key}
@@ -183,8 +137,7 @@ export default function AdminBookingsList({
       ) : (
         <div className="space-y-4">
           {filtered.map((b) => {
-            const status =
-              statusConfig[b.status] || statusConfig.PENDING_UPLOAD;
+            const st = statusConfig[b.status] ?? statusConfig.PENDING_APPROVAL;
             const dateStr = new Date(b.date).toLocaleDateString("en-US", {
               weekday: "short",
               month: "short",
@@ -199,11 +152,11 @@ export default function AdminBookingsList({
               >
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <span
-                        className={`text-xs font-semibold px-3 py-1 rounded-full ${status.color}`}
+                        className={`text-xs font-semibold px-3 py-1 rounded-full ${st.color}`}
                       >
-                        {status.label}
+                        {st.label}
                       </span>
                       {b.paymentStatus === "paid" && (
                         <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700">
@@ -221,6 +174,9 @@ export default function AdminBookingsList({
                         <p className="text-slate-500 text-xs">
                           {b.studentEmail}
                         </p>
+                        {b.studentPhone && (
+                          <p className="text-slate-400 text-xs">{b.studentPhone}</p>
+                        )}
                       </div>
                       <div>
                         <p className="text-slate-400 text-xs">Instructor</p>
@@ -243,6 +199,23 @@ export default function AdminBookingsList({
                       </div>
                     </div>
 
+                    {(b.pickupAddress || b.roadTestCenter) && (
+                      <div className="mt-3 space-y-1">
+                        {b.pickupAddress && (
+                          <p className="text-sm text-slate-600 flex items-center gap-1.5">
+                            <Navigation className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span><span className="font-medium">Pickup:</span> {b.pickupAddress}</span>
+                          </p>
+                        )}
+                        {b.roadTestCenter && (
+                          <p className="text-sm text-slate-600 flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span><span className="font-medium">Test Centre:</span> {b.roadTestCenter}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {b.notes && (
                       <p className="text-sm text-slate-500 mt-3 bg-slate-50 rounded-lg p-3">
                         <span className="font-medium">Notes:</span> {b.notes}
@@ -252,46 +225,18 @@ export default function AdminBookingsList({
 
                   {/* Actions */}
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    {b.hasDocument && b.documentId && (
-                      <button
-                        onClick={() => handleViewDocument(b.documentId!)}
-                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> View Proof
-                      </button>
-                    )}
-
-                    {b.status === "PENDING_VERIFICATION" && (
-                      <>
-                        <button
-                          onClick={() => handleAction(b.id, "approve")}
-                          disabled={actionLoading === b.id}
-                          className="flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {actionLoading === b.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          )}
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleAction(b.id, "reject")}
-                          disabled={actionLoading === b.id}
-                          className="flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          <XCircle className="w-3.5 h-3.5" /> Reject
-                        </button>
-                      </>
-                    )}
-
-                    {!["CANCELLED", "REJECTED"].includes(b.status) && (
+                    {b.status !== "CANCELLED" && (
                       <button
                         onClick={() => handleCancel(b.id)}
                         disabled={actionLoading === b.id}
                         className="flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        <Ban className="w-3.5 h-3.5" /> Cancel
+                        {actionLoading === b.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Ban className="w-3.5 h-3.5" />
+                        )}
+                        Cancel
                       </button>
                     )}
 

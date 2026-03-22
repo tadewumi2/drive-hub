@@ -122,6 +122,12 @@ export default function HomePage() {
           >
             Log In
           </Link>
+          <Link
+            href="/auth/sign-up"
+            className="text-sm font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white rounded-full px-6 py-2 transition-colors shadow-md shadow-amber-200/40"
+          >
+            Sign Up
+          </Link>
         </div>
       </motion.header>
 

@@ -31,19 +31,29 @@ export async function POST(
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    if (booking.status !== "PENDING_VERIFICATION") {
+    if (booking.status !== "PENDING_APPROVAL") {
       return NextResponse.json(
         { error: "Booking cannot be approved in its current state" },
         { status: 400 },
       );
     }
 
+    // Check approval window hasn't expired
+    const { getExpiryState } = await import("@/lib/booking-expiry");
+    const state = getExpiryState(booking);
+    if (state === "final_expired") {
+      return NextResponse.json(
+        { error: "Approval window has expired. The booking will be auto-cancelled." },
+        { status: 409 },
+      );
+    }
+
     await prisma.booking.update({
       where: { id },
-      data: { status: "APPROVED" },
+      data: { status: "PENDING_PAYMENT" },
     });
 
-    return NextResponse.json({ message: "Booking approved" }, { status: 200 });
+    return NextResponse.json({ message: "Booking approved — student can now pay" }, { status: 200 });
   } catch (error) {
     console.error("Approve error:", error);
     return NextResponse.json(

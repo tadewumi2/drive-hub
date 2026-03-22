@@ -17,7 +17,7 @@ export default auth((req) => {
     pathname.startsWith(route),
   );
   const isInstructorRoute = instructorRoutes.some((route) =>
-    pathname.startsWith(route),
+    pathname === route || pathname.startsWith(route + "/"),
   );
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
 

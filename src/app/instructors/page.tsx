@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import InstructorsList from "@/components/instructors/instructors-list";
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -9,6 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function InstructorsPage() {
+  const session = await auth();
+  const isLoggedIn = !!session?.user;
+
   const instructors = await prisma.instructorProfile.findMany({
     where: { isActive: true },
     include: {
@@ -64,19 +69,29 @@ export default async function InstructorsPage() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <a
-              href="/auth/sign-in"
-              className="text-sm font-medium text-[var(--navy)] hover:text-[var(--gold)] transition-colors"
-            >
-              Sign In
-            </a>
-
-            <a
-              href="/auth/sign-up"
-              className="text-sm font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white px-5 py-2 rounded-full transition-colors"
-            >
-              Sign Up
-            </a>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="text-sm font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white px-5 py-2 rounded-full transition-colors"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <a
+                  href="/auth/sign-in"
+                  className="text-sm font-medium text-[var(--navy)] hover:text-[var(--gold)] transition-colors"
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/auth/sign-up"
+                  className="text-sm font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white px-5 py-2 rounded-full transition-colors"
+                >
+                  Sign Up
+                </a>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -93,7 +108,9 @@ export default async function InstructorsPage() {
           </p>
         </div>
 
-        <InstructorsList instructors={formattedInstructors} />
+        <Suspense fallback={<p className="text-center text-slate-500">Loading instructors...</p>}>
+          <InstructorsList instructors={formattedInstructors} />
+        </Suspense>
       </main>
     </div>
   );

@@ -37,9 +37,12 @@ model Session {
 }
 
 model VerificationToken {
+  id         String   @id @default(cuid())
   identifier String
-  token      String   @unique
+  token      String
   expires    DateTime
+
+  createdAt  DateTime @default(now())
 
   @@unique([identifier, token])
 }
@@ -141,47 +144,34 @@ model AvailabilityException {
 // ─── Booking Models ───
 
 enum BookingStatus {
-  PENDING_UPLOAD
-  PENDING_VERIFICATION
-  APPROVED
-  CONFIRMED
-  REJECTED
-  CANCELLED
+  PENDING_PAYMENT   // booking created, awaiting payment
+  PENDING_APPROVAL  // paid, waiting for instructor to approve (30-min window)
+  CONFIRMED         // instructor approved
+  CANCELLED         // cancelled by student, instructor timeout, or admin
 }
 
 model Booking {
-  id            String        @id @default(cuid())
-  studentId     String
-  instructorId  String
-  date          DateTime      @db.Date
-  startHour     Int           // 0-23
-  status        BookingStatus @default(PENDING_UPLOAD)
-  notes         String?       @db.Text
+  id               String        @id @default(cuid())
+  studentId        String
+  instructorId     String
+  date             DateTime      @db.Date
+  startHour        Int           // 0-23
+  status           BookingStatus @default(PENDING_PAYMENT)
+  notes            String?       @db.Text
+  pickupAddress    String?
+  roadTestCenter   String?
+  approvalDeadline DateTime?     // set to now+30min after payment confirms
+  approvalExtendedAt DateTime?   // set when student extends; enables second 30-min window
 
   student    User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
   instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
 
-  uploadedDocument   UploadedDocument?
   paymentTransaction PaymentTransaction?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([instructorId, date, startHour]) // Prevent double booking
-}
-
-model UploadedDocument {
-  id        String @id @default(cuid())
-  bookingId String @unique
-  fileName  String
-  fileType  String
-  fileSize  Int
-  s3Key     String
-  url       String
-
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
 }
 
 model PaymentTransaction {

@@ -9,23 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { checkAndExpireBooking } from "@/lib/booking-expiry";
+import ApprovalCountdown from "@/components/booking/approval-countdown";
+import { Navigation, Building2 } from "lucide-react";
+import { BookingStatus } from "@prisma/client";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  PENDING_UPLOAD: {
-    label: "Upload Required",
-    color: "bg-amber-100 text-amber-700",
-  },
-  PENDING_VERIFICATION: {
-    label: "Pending Verification",
-    color: "bg-blue-100 text-blue-700",
-  },
-  APPROVED: {
-    label: "Approved — Pay Now",
-    color: "bg-emerald-100 text-emerald-700",
-  },
-  CONFIRMED: { label: "Confirmed", color: "bg-green-100 text-green-700" },
-  REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700" },
-  CANCELLED: { label: "Cancelled", color: "bg-slate-100 text-slate-700" },
+  PENDING_APPROVAL: { label: "Awaiting Instructor Approval", color: "bg-amber-100 text-amber-700" },
+  PENDING_PAYMENT:  { label: "Approved — Payment Required",  color: "bg-blue-100 text-blue-700"   },
+  CONFIRMED:        { label: "Confirmed",                    color: "bg-green-100 text-green-700"  },
+  CANCELLED:        { label: "Cancelled",                    color: "bg-slate-100 text-slate-500"  },
 };
 
 function formatHour(h: number): string {
@@ -36,16 +29,39 @@ function formatHour(h: number): string {
 
 export default async function BookingsPage() {
   const session = await auth();
-
-  if (!session?.user) {
-    redirect("/auth/sign-in");
-  }
+  if (!session?.user) redirect("/auth/sign-in");
 
   const bookings = await prisma.booking.findMany({
     where: { studentId: session.user.id },
-    include: {
+    include: { instructor: { include: { user: { select: { name: true } } } } },
+    orderBy: { date: "desc" },
+  });
+
+  // Lazy-expire any PENDING_APPROVAL bookings whose window has passed
+  await Promise.all(
+    bookings
+      .filter((b) => b.status === BookingStatus.PENDING_APPROVAL)
+      .map((b) => checkAndExpireBooking(b.id)),
+  );
+
+  // Re-fetch after potential status changes
+  const fresh = await prisma.booking.findMany({
+    where: { studentId: session.user.id },
+    select: {
+      id: true,
+      date: true,
+      startHour: true,
+      status: true,
+      notes: true,
+      pickupAddress: true,
+      roadTestCenter: true,
+      approvalDeadline: true,
+      approvalExtendedAt: true,
       instructor: {
-        include: {
+        select: {
+          location: true,
+          carType: true,
+          hourlyRate: true,
           user: { select: { name: true } },
         },
       },
@@ -53,36 +69,96 @@ export default async function BookingsPage() {
     orderBy: { date: "desc" },
   });
 
-  const upcoming = bookings.filter(
-    (b) =>
-      new Date(b.date) >= new Date(new Date().toDateString()) &&
-      !["CANCELLED", "REJECTED"].includes(b.status),
+  const today = new Date(new Date().toDateString());
+
+  const active = fresh.filter(
+    (b) => b.status !== BookingStatus.CANCELLED && (
+      b.status === BookingStatus.PENDING_APPROVAL ||
+      b.status === BookingStatus.PENDING_PAYMENT ||
+      new Date(b.date) >= today
+    ),
   );
 
-  const past = bookings.filter(
+  const past = fresh.filter(
     (b) =>
-      new Date(b.date) < new Date(new Date().toDateString()) ||
-      ["CANCELLED", "REJECTED"].includes(b.status),
+      b.status === BookingStatus.CANCELLED ||
+      (b.status === BookingStatus.CONFIRMED && new Date(b.date) < today),
   );
+
+  function BookingRow({ b, dim }: { b: (typeof fresh)[0]; dim?: boolean }) {
+    const st = statusConfig[b.status] ?? statusConfig.PENDING_APPROVAL;
+    const dateStr = b.date.toLocaleDateString("en-US", {
+      weekday: "short", month: "short", day: "numeric", year: "numeric",
+    });
+
+    return (
+      <div className={`p-4 bg-slate-50 rounded-xl ${dim ? "opacity-60" : ""}`}>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div className="flex-1">
+            <p className="font-medium text-slate-900">{b.instructor.user.name}</p>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {dateStr} • {formatHour(b.startHour)} – {formatHour(b.startHour + 1)}
+            </p>
+            <p className="text-sm text-slate-400 mt-0.5">
+              {b.instructor.location} • {b.instructor.carType}
+            </p>
+            {b.pickupAddress && (
+              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                <Navigation className="w-3 h-3 shrink-0" /> {b.pickupAddress}
+              </p>
+            )}
+            {b.roadTestCenter && (
+              <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                <Building2 className="w-3 h-3 shrink-0" /> {b.roadTestCenter}
+              </p>
+            )}
+
+            {/* Countdown + actions for pending approval */}
+            {b.status === "PENDING_APPROVAL" && (
+              <ApprovalCountdown
+                bookingId={b.id}
+                approvalDeadline={b.approvalDeadline?.toISOString() ?? null}
+                approvalExtendedAt={b.approvalExtendedAt?.toISOString() ?? null}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap shrink-0">
+            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${st.color}`}>
+              {st.label}
+            </span>
+            <span className="text-sm font-bold text-slate-900">
+              ${b.instructor.hourlyRate.toFixed(2)}
+            </span>
+
+            {/* Pay Now button for approved bookings */}
+            {b.status === "PENDING_PAYMENT" && (
+              <Link href={`/booking/payment?id=${b.id}`}>
+                <button className="text-xs font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white px-4 py-1.5 rounded-full transition-colors">
+                  Pay Now
+                </button>
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">My Bookings</h1>
-        <p className="text-slate-500 mt-1">
-          View and manage all your driving lesson bookings
-        </p>
+        <p className="text-slate-500 mt-1">View and manage all your driving lesson bookings</p>
       </div>
 
-      {bookings.length === 0 ? (
+      {fresh.length === 0 ? (
         <Card>
           <CardContent>
             <div className="text-center py-12">
               <p className="text-5xl mb-4">📅</p>
               <p className="text-slate-600 font-medium">No bookings yet</p>
-              <p className="text-sm text-slate-400 mt-1">
-                Browse instructors to book your first lesson
-              </p>
+              <p className="text-sm text-slate-400 mt-1">Browse instructors to book your first lesson</p>
               <Link href="/instructors">
                 <button className="mt-4 bg-slate-900 text-white text-sm font-medium px-6 py-2.5 rounded-full hover:bg-slate-800 transition-colors">
                   Browse Instructors
@@ -93,110 +169,29 @@ export default async function BookingsPage() {
         </Card>
       ) : (
         <>
-          {/* Upcoming */}
-          {upcoming.length > 0 && (
+          {active.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Upcoming Lessons</CardTitle>
-                <CardDescription>
-                  Your scheduled driving lessons
-                </CardDescription>
+                <CardTitle>Active Bookings</CardTitle>
+                <CardDescription>Pending approval, payment, or upcoming lessons</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {upcoming.map((b) => {
-                    const status =
-                      statusConfig[b.status] ||
-                      statusConfig.PENDING_VERIFICATION;
-                    return (
-                      <div
-                        key={b.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-xl"
-                      >
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {b.instructor.user.name}
-                          </p>
-                          <p className="text-sm text-slate-500 mt-0.5">
-                            {b.date.toLocaleDateString("en-US", {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}{" "}
-                            • {formatHour(b.startHour)} –{" "}
-                            {formatHour(b.startHour + 1)}
-                          </p>
-                          <p className="text-sm text-slate-400 mt-0.5">
-                            {b.instructor.location} • {b.instructor.carType}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`text-xs font-semibold px-3 py-1 rounded-full ${status.color}`}
-                          >
-                            {status.label}
-                          </span>
-                          <span className="text-sm font-bold text-slate-900">
-                            ${b.instructor.hourlyRate.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {active.map((b) => <BookingRow key={b.id} b={b} />)}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Past */}
           {past.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Past Bookings</CardTitle>
-                <CardDescription>
-                  Your completed and previous lessons
-                </CardDescription>
+                <CardDescription>Completed and cancelled lessons</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {past.map((b) => {
-                    const status =
-                      statusConfig[b.status] ||
-                      statusConfig.PENDING_VERIFICATION;
-                    return (
-                      <div
-                        key={b.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-xl opacity-70"
-                      >
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {b.instructor.user.name}
-                          </p>
-                          <p className="text-sm text-slate-500 mt-0.5">
-                            {b.date.toLocaleDateString("en-US", {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}{" "}
-                            • {formatHour(b.startHour)} –{" "}
-                            {formatHour(b.startHour + 1)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`text-xs font-semibold px-3 py-1 rounded-full ${status.color}`}
-                          >
-                            {status.label}
-                          </span>
-                          <span className="text-sm font-bold text-slate-900">
-                            ${b.instructor.hourlyRate.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {past.map((b) => <BookingRow key={b.id} b={b} dim />)}
                 </div>
               </CardContent>
             </Card>

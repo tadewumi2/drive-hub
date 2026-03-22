@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { instructorId, date, startHour, notes, phone } = body;
+    const { instructorId, date, startHour, notes, phone, pickupAddress, roadTestCenter } = body;
 
     if (!instructorId || !date || startHour === undefined) {
       return NextResponse.json(
@@ -63,7 +63,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Create booking
+    // Create booking — starts in PENDING_APPROVAL, instructor must confirm before payment
+    const approvalDeadline = new Date(Date.now() + 30 * 60 * 1000);
     const booking = await prisma.booking.create({
       data: {
         studentId: session.user.id,
@@ -71,7 +72,10 @@ export async function POST(req: Request) {
         date: bookingDate,
         startHour,
         notes: notes || null,
-        status: "PENDING_UPLOAD",
+        pickupAddress: pickupAddress || null,
+        roadTestCenter: roadTestCenter || null,
+        status: "PENDING_APPROVAL",
+        approvalDeadline,
       },
     });
 

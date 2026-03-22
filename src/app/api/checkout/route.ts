@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { BookingStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -26,7 +27,6 @@ export async function POST(req: Request) {
         instructor: {
           include: { user: { select: { name: true } } },
         },
-        document: true,
       },
     });
 
@@ -34,16 +34,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    if (!booking.document) {
+    if (booking.status !== BookingStatus.PENDING_PAYMENT) {
       return NextResponse.json(
-        { error: "Please upload your road test proof before paying" },
-        { status: 400 },
-      );
-    }
-
-    if (booking.status !== "APPROVED") {
-      return NextResponse.json(
-        { error: "This booking is not ready for payment yet" },
+        { error: "This booking is not ready for payment" },
         { status: 400 },
       );
     }
@@ -64,6 +57,7 @@ export async function POST(req: Request) {
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
+      phone_number_collection: { enabled: false },
       customer_email: session.user.email || undefined,
       line_items: [
         {
@@ -81,7 +75,7 @@ export async function POST(req: Request) {
       metadata: {
         bookingId: booking.id,
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/booking/confirmation?id=${booking.id}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/bookings`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/booking/payment?id=${booking.id}`,
     });
 

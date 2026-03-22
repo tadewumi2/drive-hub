@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Calendar, Clock, Users, AlertCircle } from "lucide-react";
+import { BookingStatus } from "@prisma/client";
 
 export default async function InstructorDashboardPage() {
   const session = await auth();
@@ -25,21 +26,21 @@ export default async function InstructorDashboardPage() {
       prisma.booking.count({
         where: {
           instructorId: profile.id,
-          status: "PENDING_VERIFICATION",
+          status: BookingStatus.PENDING_APPROVAL,
         },
       }),
       prisma.booking.count({
         where: {
           instructorId: profile.id,
           date: { gte: today },
-          status: { in: ["CONFIRMED", "APPROVED"] },
+          status: BookingStatus.CONFIRMED,
         },
       }),
       prisma.booking.findMany({
         where: {
           instructorId: profile.id,
           date: today,
-          status: { in: ["CONFIRMED", "APPROVED", "PENDING_VERIFICATION"] },
+          status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT] },
         },
         include: {
           student: { select: { name: true, email: true, phone: true } },
@@ -87,7 +88,7 @@ export default async function InstructorDashboardPage() {
             <p className="text-2xl font-bold text-slate-900">
               {pendingVerification}
             </p>
-            <p className="text-sm text-slate-500">Needs Verification</p>
+            <p className="text-sm text-slate-500">Needs Approval</p>
           </div>
         </Link>
 
@@ -148,18 +149,12 @@ export default async function InstructorDashboardPage() {
                 </div>
                 <span
                   className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                    b.status === "CONFIRMED"
+                    b.status === BookingStatus.CONFIRMED
                       ? "bg-green-100 text-green-700"
-                      : b.status === "APPROVED"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-blue-100 text-blue-700"
+                      : "bg-blue-100 text-blue-700"
                   }`}
                 >
-                  {b.status === "CONFIRMED"
-                    ? "Confirmed"
-                    : b.status === "APPROVED"
-                      ? "Awaiting Payment"
-                      : "Pending"}
+                  {b.status === BookingStatus.CONFIRMED ? "Confirmed" : "Awaiting Payment"}
                 </span>
               </div>
             ))}

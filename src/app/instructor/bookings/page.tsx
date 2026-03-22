@@ -18,7 +18,6 @@ export default async function InstructorBookingsPage() {
     where: { instructorId: profile.id },
     include: {
       student: { select: { name: true, email: true, phone: true } },
-      uploadedDocument: { select: { id: true, fileName: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -32,9 +31,9 @@ export default async function InstructorBookingsPage() {
     startHour: b.startHour,
     status: b.status,
     notes: b.notes,
-    hasDocument: !!b.uploadedDocument,
-    documentId: b.uploadedDocument?.id || null,
-    documentName: b.uploadedDocument?.fileName || null,
+    pickupAddress: b.pickupAddress,
+    roadTestCenter: b.roadTestCenter,
+    approvalDeadline: b.approvalDeadline?.toISOString() ?? null,
     createdAt: b.createdAt.toISOString(),
   }));
 

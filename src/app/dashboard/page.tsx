@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { BookingStatus } from "@prisma/client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
       where: {
         studentId: session.user.id,
         date: { gte: today },
-        status: { in: ["CONFIRMED", "APPROVED", "PENDING_VERIFICATION"] },
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING_APPROVAL] },
       },
     }),
     prisma.booking.count({
@@ -53,7 +54,7 @@ export default async function DashboardPage() {
     prisma.booking.count({
       where: {
         studentId: session.user.id,
-        status: { in: ["PENDING_UPLOAD", "PENDING_VERIFICATION"] },
+        status: { in: [BookingStatus.PENDING_PAYMENT, BookingStatus.PENDING_APPROVAL] },
       },
     }),
   ]);
@@ -111,14 +112,14 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Pending Verification</CardDescription>
+            <CardDescription>Pending Approval</CardDescription>
             <CardTitle className="text-3xl">{pending}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-slate-500">
               {pending === 0
-                ? "All bookings verified"
-                : "Awaiting verification"}
+                ? "No pending bookings"
+                : "Awaiting payment or approval"}
             </p>
           </CardContent>
         </Card>

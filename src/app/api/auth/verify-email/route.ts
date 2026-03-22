@@ -1,66 +1,55 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const token = searchParams.get("token");
-    const email = searchParams.get("email");
+    const { email, otp } = await req.json();
 
-    if (!token || !email) {
+    if (!email || !otp) {
       return NextResponse.json(
-        { error: "Missing token or email" },
+        { error: "Email and verification code are required" },
         { status: 400 },
       );
     }
 
-    // Find the verification token
+    const normalizedEmail = email.toLowerCase();
+
+    // Find the token
     const verificationToken = await prisma.verificationToken.findFirst({
       where: {
-        token,
-        identifier: email,
+        identifier: normalizedEmail,
+        token: otp,
       },
     });
 
     if (!verificationToken) {
       return NextResponse.json(
-        { error: "Invalid verification link" },
+        { error: "Invalid verification code" },
         { status: 400 },
       );
     }
 
-    // Check if token has expired
+    // Check if expired
     if (verificationToken.expires < new Date()) {
-      // Clean up expired token
       await prisma.verificationToken.delete({
-        where: {
-          identifier_token: {
-            identifier: verificationToken.identifier,
-            token: verificationToken.token,
-          },
-        },
+        where: { id: verificationToken.id },
       });
 
       return NextResponse.json(
-        { error: "Verification link has expired. Please sign up again." },
+        { error: "Verification code has expired. Please request a new one." },
         { status: 400 },
       );
     }
 
-    // Update user as verified
+    // Verify user
     await prisma.user.update({
-      where: { email },
+      where: { email: normalizedEmail },
       data: { emailVerified: new Date() },
     });
 
-    // Delete used token
-    await prisma.verificationToken.delete({
-      where: {
-        identifier_token: {
-          identifier: verificationToken.identifier,
-          token: verificationToken.token,
-        },
-      },
+    // Clean up all tokens for this email
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: normalizedEmail },
     });
 
     return NextResponse.json(

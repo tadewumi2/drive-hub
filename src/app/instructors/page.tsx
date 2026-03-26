@@ -15,7 +15,7 @@ export default async function InstructorsPage() {
   const isLoggedIn = !!session?.user;
 
   const instructors = await prisma.instructorProfile.findMany({
-    where: { isActive: true },
+    where: { isActive: true, verificationStatus: "APPROVED" },
     include: {
       user: {
         select: {

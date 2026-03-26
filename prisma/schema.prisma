@@ -90,23 +90,54 @@ model PasswordResetToken {
 
 // ─── Instructor Models ───
 
+enum InstructorVerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum DocumentType {
+  DRIVING_LICENSE
+  INSTRUCTOR_CERTIFICATE
+  VEHICLE_INSURANCE
+  PROFILE_PHOTO
+}
+
 model InstructorProfile {
-  id          String  @id @default(cuid())
-  userId      String  @unique
-  bio         String? @db.Text
-  carType     String
-  location    String
-  hourlyRate  Float
-  image       String?
-  isActive    Boolean @default(true)
+  id                 String                       @id @default(cuid())
+  userId             String                       @unique
+  bio                String?                      @db.Text
+  carType            String
+  location           String
+  hourlyRate         Float
+  image              String?
+  isActive           Boolean                      @default(true)
+  verificationStatus InstructorVerificationStatus @default(UNVERIFIED)
+  rejectionReason    String?                      @db.Text
 
   user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   availabilityRules  AvailabilityRule[]
   availabilityExceptions AvailabilityException[]
   bookings           Booking[]
+  documents          InstructorDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model InstructorDocument {
+  id           String       @id @default(cuid())
+  instructorId String
+  type         DocumentType
+  fileKey      String       // S3 object key
+  fileName     String
+
+  instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  uploadedAt DateTime @default(now())
+
+  @@unique([instructorId, type])
 }
 
 enum DayOfWeek {

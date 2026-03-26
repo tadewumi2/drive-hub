@@ -22,6 +22,7 @@ export default async function AdminInstructorsPage() {
     hourlyRate: inst.hourlyRate,
     isActive: inst.isActive,
     totalBookings: inst._count.bookings,
+    verificationStatus: inst.verificationStatus,
   }));
 
   return (

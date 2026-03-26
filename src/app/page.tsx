@@ -116,10 +116,10 @@ export default function HomePage() {
               For Students
             </Link>
             <Link
-              href="/auth/sign-in"
+              href="/auth/sign-up/instructor"
               className="hover:text-[var(--gold)] transition-colors"
             >
-              For Instructors
+              Become an Instructor
             </Link>
             <Link
               href="#how-it-works"
@@ -406,6 +406,81 @@ export default function HomePage() {
                 Get Started
               </button>
             </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Become an Instructor ── */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="bg-gradient-to-br from-[var(--navy)] to-[#1e3a5f] rounded-3xl overflow-hidden"
+          >
+            <div className="grid lg:grid-cols-2 gap-0">
+              {/* Left */}
+              <div className="p-10 lg:p-14 flex flex-col justify-center">
+                <span className="inline-block text-xs font-semibold uppercase tracking-widest text-[var(--gold)] mb-4">
+                  For Instructors
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+                  Share Your Expertise.<br />Earn on Your Schedule.
+                </h2>
+                <p className="mt-4 text-slate-300 text-base leading-relaxed max-w-md">
+                  Join DriveHub as a certified instructor. Set your own hours, choose your rate, and get matched with students in your area.
+                </p>
+                <ul className="mt-6 space-y-3 text-sm text-slate-300">
+                  {[
+                    "Set your own availability and hourly rate",
+                    "Students come to you — no cold calling",
+                    "Get paid securely through the platform",
+                    "Simple verification process to get started",
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[var(--gold)]/20 flex items-center justify-center shrink-0">
+                        <ShieldCheck className="w-3 h-3 text-[var(--gold)]" />
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                  <Link href="/auth/sign-up/instructor">
+                    <button className="bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white font-semibold px-8 py-3 rounded-full transition-colors shadow-lg shadow-amber-500/20 whitespace-nowrap">
+                      Apply as an Instructor
+                    </button>
+                  </Link>
+                  <Link href="/auth/sign-in">
+                    <button className="border border-white/20 text-white hover:bg-white/10 font-medium px-8 py-3 rounded-full transition-colors whitespace-nowrap">
+                      Sign In
+                    </button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right — stats */}
+              <div className="hidden lg:flex items-center justify-center p-14">
+                <div className="grid grid-cols-2 gap-6 w-full max-w-sm">
+                  {[
+                    { value: "100+", label: "Active Instructors" },
+                    { value: "$65", label: "Avg. Hourly Rate" },
+                    { value: "1,000+", label: "Lessons Booked" },
+                    { value: "4.9★", label: "Average Rating" },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="bg-white/10 rounded-2xl p-6 text-center"
+                    >
+                      <p className="text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-xs text-slate-400 mt-1">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>

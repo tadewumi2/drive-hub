@@ -17,6 +17,7 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get("email") || "";
+  const redirectTo = searchParams.get("redirect") || "";
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
@@ -109,7 +110,10 @@ function VerifyEmailContent() {
       }
 
       setSuccess(data.message);
-      setTimeout(() => router.push("/auth/sign-in"), 2000);
+      const destination = redirectTo
+        ? `/auth/sign-in?callbackUrl=${encodeURIComponent(redirectTo)}`
+        : "/auth/sign-in";
+      setTimeout(() => router.push(destination), 2000);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

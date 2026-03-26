@@ -195,3 +195,88 @@ export function getPasswordResetEmailHtml(name: string, url: string) {
     </div>
   `;
 }
+
+// ─── Instructor Verification Emails ───
+
+export function getVerificationSubmittedEmailHtml({
+  instructorName,
+  instructorEmail,
+  reviewUrl,
+}: {
+  instructorName: string;
+  instructorEmail: string;
+  reviewUrl: string;
+}) {
+  return `
+    <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px 20px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0;">DriveHub</h1>
+      </div>
+      <h2 style="font-size: 20px; font-weight: 600; color: #0f172a; margin-bottom: 8px;">New Verification Request</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+        <strong>${instructorName}</strong> (${instructorEmail}) has submitted all required documents and is awaiting verification review.
+      </p>
+      <a href="${reviewUrl}" style="display: inline-block; background: #0f172a; color: #fff; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+        Review Documents
+      </a>
+    </div>
+  `;
+}
+
+export function getVerificationApprovedEmailHtml({
+  name,
+  dashboardUrl,
+}: {
+  name: string;
+  dashboardUrl: string;
+}) {
+  return `
+    <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px 20px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0;">DriveHub</h1>
+      </div>
+      <h2 style="font-size: 20px; font-weight: 600; color: #0f172a; margin-bottom: 8px;">You're approved! 🎉</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+        Hi ${name}, your instructor account has been verified and approved. You are now live on the platform and students can book lessons with you.
+      </p>
+      <a href="${dashboardUrl}" style="display: inline-block; background: #f59e0b; color: #fff; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+        Go to Dashboard
+      </a>
+      <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-top: 24px;">
+        Make sure your availability is set up so students can start booking you right away.
+      </p>
+    </div>
+  `;
+}
+
+export function getVerificationRejectedEmailHtml({
+  name,
+  reason,
+  resubmitUrl,
+}: {
+  name: string;
+  reason: string;
+  resubmitUrl: string;
+}) {
+  return `
+    <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px 20px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0;">DriveHub</h1>
+      </div>
+      <h2 style="font-size: 20px; font-weight: 600; color: #0f172a; margin-bottom: 8px;">Application Update</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+        Hi ${name}, after reviewing your submitted documents we were unable to approve your application at this time.
+      </p>
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; border-radius: 4px; margin-bottom: 24px;">
+        <p style="color: #dc2626; font-size: 14px; font-weight: 600; margin: 0 0 4px;">Reason:</p>
+        <p style="color: #7f1d1d; font-size: 14px; margin: 0;">${reason}</p>
+      </div>
+      <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+        Please address the issue above and resubmit your documents.
+      </p>
+      <a href="${resubmitUrl}" style="display: inline-block; background: #0f172a; color: #fff; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+        Resubmit Documents
+      </a>
+    </div>
+  `;
+}

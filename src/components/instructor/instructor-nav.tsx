@@ -18,6 +18,7 @@ const navLinks = [
   { href: "/instructor", label: "Dashboard" },
   { href: "/instructor/availability", label: "Availability" },
   { href: "/instructor/bookings", label: "Bookings" },
+  { href: "/instructor/verification", label: "Verification" },
 ];
 
 export default function InstructorNav({ user }: InstructorNavProps) {

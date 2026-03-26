@@ -11,7 +11,9 @@ import {
   MapPin,
   Car,
   DollarSign,
+  ShieldCheck,
 } from "lucide-react";
+import Link from "next/link";
 
 interface Instructor {
   id: string;
@@ -25,7 +27,15 @@ interface Instructor {
   hourlyRate: number;
   isActive: boolean;
   totalBookings: number;
+  verificationStatus: string;
 }
+
+const verificationBadge: Record<string, { label: string; className: string }> = {
+  UNVERIFIED: { label: "Unverified", className: "bg-slate-100 text-slate-500" },
+  PENDING_REVIEW: { label: "Pending Review", className: "bg-amber-100 text-amber-700" },
+  APPROVED: { label: "Approved", className: "bg-green-100 text-green-700" },
+  REJECTED: { label: "Rejected", className: "bg-red-100 text-red-700" },
+};
 
 export default function AdminInstructorsList({
   instructors,
@@ -331,13 +341,21 @@ export default function AdminInstructorsList({
           >
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <h3 className="font-semibold text-slate-900">{inst.name}</h3>
                   {!inst.isActive && (
                     <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
                       Inactive
                     </span>
                   )}
+                  {(() => {
+                    const badge = verificationBadge[inst.verificationStatus] ?? verificationBadge.UNVERIFIED;
+                    return (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-sm text-slate-500">{inst.email}</p>
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-500">
@@ -355,6 +373,14 @@ export default function AdminInstructorsList({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {inst.verificationStatus === "PENDING_REVIEW" && (
+                  <Link
+                    href={`/admin/instructors/${inst.id}/verify`}
+                    className="flex items-center gap-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" /> Review
+                  </Link>
+                )}
                 <button
                   onClick={() => toggleActive(inst.id, inst.isActive)}
                   className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${

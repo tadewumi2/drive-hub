@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import AuthSessionProvider from "@/components/providers/session-provider";
 import InactivityLogout from "@/components/providers/inactivity-logout";
+import PosthogProvider from "@/components/providers/posthog-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,13 +28,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <Script
+            defer
+            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+            src="https://plausible.io/js/script.js"
+          />
+        )}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthSessionProvider>
-          <InactivityLogout />
-          {children}
-        </AuthSessionProvider>
+        <PosthogProvider>
+          <AuthSessionProvider>
+            <InactivityLogout />
+            {children}
+          </AuthSessionProvider>
+        </PosthogProvider>
       </body>
     </html>
   );

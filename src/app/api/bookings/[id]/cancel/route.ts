@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { processRefund } from "@/lib/refund";
+import { logAudit, getIp } from "@/lib/audit";
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ip = getIp(req);
   try {
     const session = await auth();
     if (!session?.user) {
@@ -42,6 +44,8 @@ export async function POST(
     if (booking.paymentTransaction?.status === "paid") {
       refundInfo = await processRefund(id, "student_cancel");
     }
+
+    logAudit({ userId: session.user.id, userEmail: session.user.email ?? undefined, action: "BOOKING_CANCELLED", details: { bookingId: id, refunded: !!refundInfo }, ipAddress: ip });
 
     return NextResponse.json({
       message: "Booking cancelled",

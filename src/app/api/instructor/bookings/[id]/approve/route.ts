@@ -4,11 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { BookingStatus } from "@prisma/client";
 import { sendEmail, getBookingApprovedEmailHtml } from "@/lib/email";
 import { getExpiryState } from "@/lib/booking-expiry";
+import { logAudit, getIp } from "@/lib/audit";
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ip = getIp(req);
   try {
     const session = await auth();
     if (!session?.user) {
@@ -78,6 +80,8 @@ export async function POST(
         }),
       });
     }
+
+    logAudit({ userId: session.user.id, userEmail: session.user.email ?? undefined, action: "BOOKING_APPROVED", details: { bookingId: id }, ipAddress: ip });
 
     return NextResponse.json({ message: "Booking approved — student can now pay" }, { status: 200 });
   } catch (error) {

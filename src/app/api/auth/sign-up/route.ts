@@ -4,8 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { signUpSchema } from "@/lib/validations/auth";
 import { sendEmail, getVerificationEmailHtml } from "@/lib/email";
 import { generateOTP } from "@/lib/otp";
+import { logAudit, getIp } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  const ip = getIp(req);
+
+  const rl = rateLimit({ key: `sign-up:${ip}`, limit: 5, windowSecs: 900 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
   try {
     const body = await req.json();
     const parsed = signUpSchema.safeParse(body);
@@ -26,30 +38,23 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      // If user exists but not verified, allow re-registration
       if (!existingUser.emailVerified) {
-        // Update password in case they forgot it
+        // Unverified account — update details and resend OTP
         const hashedPassword = await bcrypt.hash(password, 12);
         await prisma.user.update({
           where: { email: normalizedEmail },
           data: { name, password: hashedPassword },
         });
 
-        // Delete old tokens
         await prisma.verificationToken.deleteMany({
           where: { identifier: normalizedEmail },
         });
 
-        // Generate and send new OTP
         const otp = generateOTP();
-        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        const expires = new Date(Date.now() + 10 * 60 * 1000);
 
         await prisma.verificationToken.create({
-          data: {
-            identifier: normalizedEmail,
-            token: otp,
-            expires,
-          },
+          data: { identifier: normalizedEmail, token: otp, expires },
         });
 
         await sendEmail({
@@ -57,16 +62,13 @@ export async function POST(req: Request) {
           subject: "Your DriveHub verification code",
           html: getVerificationEmailHtml(name, otp),
         });
-
-        return NextResponse.json(
-          { message: "Verification code sent to your email." },
-          { status: 201 },
-        );
       }
 
+      // Return the same message regardless of whether account is verified
+      // to prevent email enumeration
       return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 },
+        { message: "Account created. Verification code sent to your email." },
+        { status: 201 },
       );
     }
 
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         name,
         email: normalizedEmail,
@@ -82,6 +84,8 @@ export async function POST(req: Request) {
         role: "STUDENT",
       },
     });
+
+    logAudit({ userId: newUser.id, userEmail: normalizedEmail, action: "USER_SIGNED_UP", details: { name }, ipAddress: ip });
 
     // Generate OTP
     const otp = generateOTP();

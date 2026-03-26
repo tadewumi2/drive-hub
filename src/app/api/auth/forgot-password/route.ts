@@ -3,8 +3,20 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema } from "@/lib/validations/auth";
 import { sendEmail, getPasswordResetEmailHtml } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
+import { getIp } from "@/lib/audit";
 
 export async function POST(req: Request) {
+  const ip = getIp(req);
+
+  const rl = rateLimit({ key: `forgot-password:${ip}`, limit: 3, windowSecs: 900 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
   try {
     const body = await req.json();
     const parsed = forgotPasswordSchema.safeParse(body);

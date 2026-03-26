@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { encode } from "next-auth/jwt";
 import { cookies } from "next/headers";
+import { logAudit, getIp } from "@/lib/audit";
 
 const SESSION_COOKIE = process.env.NODE_ENV === "production"
   ? "__Secure-authjs.session-token"
@@ -11,6 +12,7 @@ const SESSION_COOKIE = process.env.NODE_ENV === "production"
 const BACKUP_COOKIE = "authjs.super-admin-backup";
 
 export async function POST(req: Request) {
+  const ip = getIp(req);
   const session = await auth();
   if (!session?.user || session.user.role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,6 +23,14 @@ export async function POST(req: Request) {
 
   const target = await prisma.user.findUnique({ where: { id: userId } });
   if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  if (target.role === "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Cannot impersonate another super admin" }, { status: 403 });
+  }
+
+  if (target.id === session.user.id) {
+    return NextResponse.json({ error: "Cannot impersonate yourself" }, { status: 400 });
+  }
 
   const cookieStore = await cookies();
 
@@ -63,6 +73,8 @@ export async function POST(req: Request) {
     target.role === "INSTRUCTOR" ? "/instructor" :
     target.role === "ADMIN" ? "/admin" :
     "/dashboard";
+
+  logAudit({ userId: session.user.id, userEmail: session.user.email ?? undefined, action: "ADMIN_IMPERSONATED_USER", details: { targetUserId: target.id, targetEmail: target.email, targetRole: target.role }, ipAddress: ip });
 
   return NextResponse.json({ redirect: destination });
 }

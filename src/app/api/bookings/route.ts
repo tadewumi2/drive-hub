@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, getNewBookingRequestEmailHtml } from "@/lib/email";
+import { logAudit, getIp } from "@/lib/audit";
 
 export async function POST(req: Request) {
+  const ip = getIp(req);
   try {
     const session = await auth();
 
@@ -19,6 +21,26 @@ export async function POST(req: Request) {
         { error: "Missing required fields" },
         { status: 400 },
       );
+    }
+
+    if (typeof startHour !== "number" || startHour < 0 || startHour > 23) {
+      return NextResponse.json({ error: "Invalid start hour" }, { status: 400 });
+    }
+
+    if (notes && notes.length > 500) {
+      return NextResponse.json({ error: "Notes must be under 500 characters" }, { status: 400 });
+    }
+
+    if (pickupAddress && pickupAddress.length > 200) {
+      return NextResponse.json({ error: "Pickup address must be under 200 characters" }, { status: 400 });
+    }
+
+    if (roadTestCenter && roadTestCenter.length > 200) {
+      return NextResponse.json({ error: "Road test centre must be under 200 characters" }, { status: 400 });
+    }
+
+    if (phone && !/^\+?[\d\s\-().]{7,20}$/.test(phone)) {
+      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
     }
 
     // Verify instructor exists and is active
@@ -80,6 +102,8 @@ export async function POST(req: Request) {
         approvalDeadline,
       },
     });
+
+    logAudit({ userId: session.user.id, userEmail: session.user.email ?? undefined, action: "BOOKING_CREATED", details: { bookingId: booking.id, instructorId, date, startHour }, ipAddress: ip });
 
     // Notify instructor (fire-and-forget — don't block the response)
     if (instructor.user.email) {

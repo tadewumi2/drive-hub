@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { logAudit, getIp } from "@/lib/audit";
 
 const SESSION_COOKIE = process.env.NODE_ENV === "production"
   ? "__Secure-authjs.session-token"
@@ -7,7 +8,8 @@ const SESSION_COOKIE = process.env.NODE_ENV === "production"
 
 const BACKUP_COOKIE = "authjs.super-admin-backup";
 
-export async function POST() {
+export async function POST(req: Request) {
+  const ip = getIp(req);
   const cookieStore = await cookies();
   const backup = cookieStore.get(BACKUP_COOKIE)?.value;
 
@@ -25,6 +27,8 @@ export async function POST() {
   });
 
   cookieStore.delete(BACKUP_COOKIE);
+
+  logAudit({ action: "ADMIN_IMPERSONATION_EXITED", ipAddress: ip });
 
   return NextResponse.json({ redirect: "/admin/users" });
 }

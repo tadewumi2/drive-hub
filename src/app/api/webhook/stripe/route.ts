@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, getBookingPaidEmailHtml } from "@/lib/email";
+import { logAudit } from "@/lib/audit";
 import Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -38,6 +39,8 @@ export async function POST(req: Request) {
         where: { id: bookingId },
         data: { status: "CONFIRMED" },
       });
+
+      logAudit({ action: "PAYMENT_COMPLETED", details: { bookingId, stripeSessionId: session.id } });
 
       // Notify instructor
       try {

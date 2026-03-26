@@ -105,7 +105,7 @@ export default async function BookingsPage() {
               {b.instructor.location} • {b.instructor.carType}
             </p>
             {b.pickupAddress && (
-              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1 truncate">
                 <Navigation className="w-3 h-3 shrink-0" /> {b.pickupAddress}
               </p>
             )}

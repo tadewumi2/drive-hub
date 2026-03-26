@@ -142,7 +142,7 @@ export default function InstructorsList({
             placeholder="Search instructor by name..."
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30 focus:border-[var(--gold)]"
+            className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30 focus:border-[var(--gold)]"
           />
         </div>
 
@@ -243,7 +243,7 @@ export default function InstructorsList({
           </p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
           {filtered.map((inst, i) => (
             <motion.div
               key={inst.id}

@@ -129,18 +129,20 @@ export default function HomePage() {
             </Link>
           </nav>
 
-          <Link
-            href="/auth/sign-in"
-            className="text-sm font-semibold text-[var(--navy)] border-2 border-[var(--navy)] rounded-full px-6 py-2 hover:bg-[var(--navy)] hover:text-white transition-all"
-          >
-            Log In
-          </Link>
-          <Link
-            href="/auth/sign-up"
-            className="text-sm font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white rounded-full px-6 py-2 transition-colors shadow-md shadow-amber-200/40"
-          >
-            Sign Up
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/auth/sign-in"
+              className="hidden sm:inline-flex text-sm font-semibold text-[var(--navy)] border-2 border-[var(--navy)] rounded-full px-5 py-2 hover:bg-[var(--navy)] hover:text-white transition-all"
+            >
+              Log In
+            </Link>
+            <Link
+              href="/auth/sign-up"
+              className="text-sm font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white rounded-full px-4 sm:px-6 py-2 transition-colors shadow-md shadow-amber-200/40"
+            >
+              Sign Up
+            </Link>
+          </div>
         </div>
       </motion.header>
 

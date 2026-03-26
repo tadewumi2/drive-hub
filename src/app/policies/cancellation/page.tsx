@@ -28,7 +28,7 @@ export default function CancellationPolicyPage() {
         </div>
       </header>
 
-      <main className="pt-28 pb-20 max-w-3xl mx-auto px-6 lg:px-8">
+      <main className="pt-28 pb-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-[var(--navy)] mb-8 transition-colors"

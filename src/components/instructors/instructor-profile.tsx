@@ -285,7 +285,7 @@ export default function InstructorProfileView({
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-medium text-[var(--navy)] min-w-[180px] text-center">
+              <span className="text-xs sm:text-sm font-medium text-[var(--navy)] min-w-[120px] sm:min-w-[180px] text-center">
                 {weekLabel}
               </span>
               <button
@@ -298,7 +298,8 @@ export default function InstructorProfileView({
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1 sm:gap-2 overflow-x-auto">
+          <div className="overflow-x-auto -mx-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-2 min-w-[340px]">
             {/* Day headers */}
             {weekDays.map((day, i) => {
               const isToday = isSameDay(day, new Date());
@@ -360,6 +361,7 @@ export default function InstructorProfileView({
             })}
           </div>
 
+          </div>
           {/* Legend */}
           <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-100">
             <div className="flex items-center gap-2">

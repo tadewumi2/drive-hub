@@ -346,6 +346,16 @@ export default function BookingForm({
               <p className="text-xs text-slate-400 mt-4 text-center">
                 Your instructor has 30 mins to approve your request
               </p>
+              <p className="text-xs text-slate-400 mt-2 text-center">
+                Free cancellation up to 48 hrs before your lesson.{" "}
+                <a
+                  href="/policies/cancellation"
+                  target="_blank"
+                  className="underline hover:text-slate-600 transition-colors"
+                >
+                  Cancellation policy
+                </a>
+              </p>
             </div>
           </div>
         </div>

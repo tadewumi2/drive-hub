@@ -535,13 +535,25 @@ export default function HomePage() {
               </ul>
             </div>
 
-            {/* Follow Us */}
+            {/* Legal */}
             <div>
-              <h4 className="font-semibold mb-4">Follow Us</h4>
+              <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2.5 text-sm text-slate-400">
-                <li>Facebook</li>
-                <li>Instagram</li>
-                <li>Twitter</li>
+                <li>
+                  <Link href="/policies/terms" className="hover:text-white transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/policies/privacy" className="hover:text-white transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/policies/cancellation" className="hover:text-white transition-colors">
+                    Cancellation Policy
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

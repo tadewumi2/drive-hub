@@ -22,6 +22,8 @@ interface Instructor {
   location: string;
   hourlyRate: number;
   image: string | null;
+  averageRating: number | null;
+  totalReviews: number;
   availability: Availability[];
 }
 
@@ -273,13 +275,24 @@ export default function InstructorsList({
                 </h3>
 
                 <div className="flex items-center gap-1 mt-1.5">
-                  {[...Array(5)].map((_, s) => (
-                    <Star
-                      key={s}
-                      className="w-3.5 h-3.5 fill-[var(--gold)] text-[var(--gold)]"
-                    />
-                  ))}
-                  <span className="text-xs text-slate-400 ml-1">5.0</span>
+                  {inst.averageRating !== null ? (
+                    <>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-3.5 h-3.5 ${s <= Math.round(inst.averageRating!) ? "fill-[var(--gold)] text-[var(--gold)]" : "text-slate-200"}`}
+                        />
+                      ))}
+                      <span className="text-xs font-medium text-slate-700 ml-1">
+                        {inst.averageRating.toFixed(1)}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        ({inst.totalReviews})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-slate-400">No reviews yet</span>
+                  )}
                 </div>
 
                 <div className="mt-3 space-y-1.5">

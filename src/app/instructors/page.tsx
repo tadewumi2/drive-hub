@@ -17,16 +17,22 @@ export default async function InstructorsPage() {
   const instructors = await prisma.instructorProfile.findMany({
     where: { isActive: true, verificationStatus: "APPROVED" },
     include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
+      user: { select: { name: true, email: true } },
       availabilityRules: true,
+      _count: { select: { reviews: true } },
     },
     orderBy: { createdAt: "desc" },
   });
+
+  // Compute average rating per instructor
+  const reviewAggregates = await prisma.review.groupBy({
+    by: ["instructorId"],
+    _avg: { rating: true },
+    where: { instructorId: { in: instructors.map((i) => i.id) } },
+  });
+  const avgByInstructor = Object.fromEntries(
+    reviewAggregates.map((r) => [r.instructorId, r._avg.rating ?? null]),
+  );
 
   const formattedInstructors = instructors.map((inst) => ({
     id: inst.id,
@@ -37,6 +43,8 @@ export default async function InstructorsPage() {
     location: inst.location,
     hourlyRate: inst.hourlyRate,
     image: inst.image,
+    averageRating: avgByInstructor[inst.id] ?? null,
+    totalReviews: inst._count.reviews,
     availability: inst.availabilityRules.map((rule) => ({
       dayOfWeek: rule.dayOfWeek,
       startHour: rule.startHour,

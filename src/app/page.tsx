@@ -517,7 +517,7 @@ export default function HomePage() {
                 </li>
                 <li>
                   <Link
-                    href="/auth/sign-in"
+                    href="/auth/sign-up/instructor"
                     className="hover:text-white transition-colors"
                   >
                     For Instructors

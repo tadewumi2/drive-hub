@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import InstructorProfileView from "@/components/instructors/instructor-profile";
+import ReviewsList from "@/components/reviews/reviews-list";
 import Link from "next/link";
 import { Car } from "lucide-react";
 
@@ -80,36 +81,42 @@ export default async function InstructorProfilePage({ params }: PageProps) {
           </Link>
 
           <div className="flex items-center gap-3">
-            <a
+            <Link
               href="/instructors"
               className="text-sm font-medium text-[var(--navy)] hover:text-[var(--gold)] transition-colors"
             >
               All Instructors
-            </a>
+            </Link>
             {session?.user ? (
-              <a
+              <Link
                 href="/dashboard"
                 className="text-sm font-semibold bg-[var(--gold)] hover:bg-[var(--gold-hover)] text-white px-5 py-2 rounded-full transition-colors"
               >
                 Dashboard
-              </a>
+              </Link>
             ) : (
-              <a
+              <Link
                 href="/auth/sign-in"
                 className="text-sm font-semibold border-2 border-[var(--navy)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white px-5 py-2 rounded-full transition-all"
               >
                 Log In
-              </a>
+              </Link>
             )}
           </div>
         </div>
       </header>
 
-      <main className="pt-28 pb-20 max-w-7xl mx-auto px-6 lg:px-8">
+      <main className="pt-28 pb-20 max-w-7xl mx-auto px-6 lg:px-8 space-y-8">
         <InstructorProfileView
           instructor={formattedInstructor}
           isLoggedIn={!!session?.user}
         />
+
+        {/* Reviews */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 lg:p-8">
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Student Reviews</h2>
+          <ReviewsList instructorId={instructor.id} />
+        </div>
       </main>
     </div>
   );

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { checkAndExpireBooking } from "@/lib/booking-expiry";
 import ApprovalCountdown from "@/components/booking/approval-countdown";
+import LeaveReview from "@/components/reviews/leave-review";
 import { Navigation, Building2 } from "lucide-react";
 import { BookingStatus } from "@prisma/client";
 
@@ -57,6 +58,7 @@ export default async function BookingsPage() {
       roadTestCenter: true,
       approvalDeadline: true,
       approvalExtendedAt: true,
+      review: { select: { id: true } },
       instructor: {
         select: {
           location: true,
@@ -141,6 +143,14 @@ export default async function BookingsPage() {
             )}
           </div>
         </div>
+
+        {/* Leave a review for past confirmed lessons */}
+        {b.status === "CONFIRMED" && new Date(b.date) < new Date(new Date().toDateString()) && !b.review && (
+          <LeaveReview bookingId={b.id} instructorName={b.instructor.user.name || "Instructor"} />
+        )}
+        {b.review && (
+          <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">★ Review submitted</p>
+        )}
       </div>
     );
   }

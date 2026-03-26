@@ -74,6 +74,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   instructorProfile   InstructorProfile?
   bookings            Booking[]
+  reviews             Review[]
 }
 
 model PasswordResetToken {
@@ -121,6 +122,7 @@ model InstructorProfile {
   availabilityExceptions AvailabilityException[]
   bookings           Booking[]
   documents          InstructorDocument[]
+  reviews            Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -199,6 +201,7 @@ model Booking {
   instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
 
   paymentTransaction PaymentTransaction?
+  review             Review?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -219,6 +222,25 @@ model PaymentTransaction {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── Reviews ───
+
+model Review {
+  id           String  @id @default(cuid())
+  bookingId    String  @unique
+  studentId    String
+  instructorId String
+  rating       Int     // 1–5
+  comment      String? @db.Text
+
+  booking    Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  student    User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([instructorId])
 }
 
 // ─── Audit Log ───

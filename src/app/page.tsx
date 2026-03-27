@@ -89,7 +89,28 @@ export default function HomePage() {
     window.location.href = `/instructors${params.toString() ? "?" + params.toString() : ""}`;
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "DriveHub",
+    url: process.env.NEXTAUTH_URL ?? "https://drivehub.ca",
+    logo: `${process.env.NEXTAUTH_URL ?? "https://drivehub.ca"}/favicon.ico`,
+    description:
+      "DriveHub connects student drivers with certified driving instructors for flexible, affordable lessons.",
+    sameAs: [],
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: "support@drivehub.ca",
+      contactType: "customer support",
+    },
+  };
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     <div className="min-h-screen bg-white font-sans">
       {/* ── Header ── */}
       <motion.header
@@ -566,5 +587,6 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

@@ -16,9 +16,51 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const APP_URL = process.env.NEXTAUTH_URL ?? "https://drivehub.ca";
+
 export const metadata: Metadata = {
-  title: "DriveHub - Book Your Driving Lessons",
-  description: "Book driving lessons with professional instructors",
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: "DriveHub – Book Driving Lessons with Qualified Instructors",
+    template: "%s | DriveHub",
+  },
+  description:
+    "Find and book certified driving instructors near you. Flexible scheduling, transparent pricing, and real student reviews.",
+  keywords: [
+    "driving lessons",
+    "driving instructor",
+    "book driving lesson",
+    "learn to drive",
+    "G2 test",
+    "G test",
+    "DriveTest",
+    "Ontario driving school",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "DriveHub",
+    title: "DriveHub – Book Driving Lessons with Qualified Instructors",
+    description:
+      "Find and book certified driving instructors near you. Flexible scheduling, transparent pricing, and real student reviews.",
+    url: APP_URL,
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "DriveHub" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DriveHub – Book Driving Lessons with Qualified Instructors",
+    description:
+      "Find and book certified driving instructors near you. Flexible scheduling, transparent pricing, and real student reviews.",
+    images: ["/og-image.png"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
 };
 
 export default function RootLayout({

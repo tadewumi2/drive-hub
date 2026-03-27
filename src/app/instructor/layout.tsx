@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import InstructorNav from "@/components/instructor/instructor-nav";
 import ImpersonationBanner from "@/components/admin/impersonation-banner";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function InstructorLayout({
   children,

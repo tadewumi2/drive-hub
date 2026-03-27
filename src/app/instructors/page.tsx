@@ -6,8 +6,14 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Our Instructors - DriveHub",
-  description: "Browse qualified instructors and book your lesson",
+  title: "Find a Driving Instructor Near You",
+  description:
+    "Browse certified driving instructors. Filter by location, availability, and car type. Read real student reviews and book instantly.",
+  openGraph: {
+    title: "Find a Driving Instructor Near You – DriveHub",
+    description:
+      "Browse certified driving instructors. Filter by location, availability, and car type. Read real student reviews and book instantly.",
+  },
 };
 
 export default async function InstructorsPage() {

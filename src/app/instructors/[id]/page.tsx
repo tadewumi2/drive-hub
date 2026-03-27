@@ -5,9 +5,40 @@ import InstructorProfileView from "@/components/instructors/instructor-profile";
 import ReviewsList from "@/components/reviews/reviews-list";
 import Link from "next/link";
 import { Car } from "lucide-react";
+import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const instructor = await prisma.instructorProfile.findUnique({
+    where: { id },
+    select: { bio: true, location: true, carType: true, hourlyRate: true, image: true, user: { select: { name: true } } },
+  });
+
+  if (!instructor) return { title: "Instructor Not Found" };
+
+  const name = instructor.user.name ?? "Driving Instructor";
+  const description = instructor.bio
+    ? instructor.bio.slice(0, 155)
+    : `Book a driving lesson with ${name} in ${instructor.location}. ${instructor.carType} vehicle — $${instructor.hourlyRate}/hr.`;
+
+  return {
+    title: `${name} – Driving Instructor in ${instructor.location}`,
+    description,
+    openGraph: {
+      title: `${name} – Driving Instructor in ${instructor.location}`,
+      description,
+      images: instructor.image ? [{ url: instructor.image, alt: name }] : [],
+    },
+    twitter: {
+      card: "summary",
+      title: `${name} – Driving Instructor in ${instructor.location}`,
+      description,
+    },
+  };
 }
 
 export default async function InstructorProfilePage({ params }: PageProps) {
@@ -66,7 +97,33 @@ export default async function InstructorProfilePage({ params }: PageProps) {
     })),
   };
 
+  const appUrl = process.env.NEXTAUTH_URL ?? "https://drivehub.ca";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: `Driving Lessons with ${formattedInstructor.name}`,
+    description: formattedInstructor.bio || `Driving instruction in ${formattedInstructor.location}`,
+    provider: {
+      "@type": "Person",
+      name: formattedInstructor.name,
+      image: formattedInstructor.image ?? undefined,
+    },
+    areaServed: formattedInstructor.location,
+    offers: {
+      "@type": "Offer",
+      price: formattedInstructor.hourlyRate,
+      priceCurrency: "CAD",
+      availability: "https://schema.org/InStock",
+    },
+    url: `${appUrl}/instructors/${formattedInstructor.id}`,
+  };
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     <div className="min-h-screen bg-[var(--blue-softer)]">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm">
@@ -119,5 +176,6 @@ export default async function InstructorProfilePage({ params }: PageProps) {
         </div>
       </main>
     </div>
+    </>
   );
 }

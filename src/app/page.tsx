@@ -19,7 +19,7 @@ const fadeUp = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.12, duration: 0.5, ease: "easeOut" },
+    transition: { delay: i * 0.12, duration: 0.5, ease: "easeOut" as const },
   }),
 };
 
@@ -553,8 +553,16 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2.5 text-sm text-slate-400">
-                <li>Contact Us</li>
-                <li>Safety Tips</li>
+                <li>
+                  <Link href="/contact" className="hover:text-white transition-colors">
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact#faq" className="hover:text-white transition-colors">
+                    FAQ
+                  </Link>
+                </li>
               </ul>
             </div>
 

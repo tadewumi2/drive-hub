@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 type RefundReason =
-  | "pending_approval" // booking never confirmed — always 100%
-  | "auto_expire"      // instructor timed out — always 100%
-  | "student_cancel"   // student cancelled — depends on lesson time
-  | "admin_cancel";    // admin cancelled — depends on lesson time
+  | "pending_approval"   // booking never confirmed — always 100%
+  | "auto_expire"        // instructor timed out — always 100%
+  | "instructor_reject"  // instructor declined — always 100%
+  | "student_cancel"     // student cancelled — depends on lesson time
+  | "admin_cancel";      // admin cancelled — depends on lesson time
 
 export async function processRefund(
   bookingId: string,

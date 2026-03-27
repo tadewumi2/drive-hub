@@ -280,3 +280,86 @@ export function getVerificationRejectedEmailHtml({
     </div>
   `;
 }
+
+/** 24-hour reminder sent to the student */
+export function getStudentReminderEmailHtml(params: {
+  studentName: string;
+  instructorName: string;
+  date: string;
+  startHour: number;
+  location: string;
+  carType: string;
+  pickupAddress: string | null;
+  dashboardUrl: string;
+}) {
+  const { studentName, instructorName, date, startHour, location, carType, pickupAddress, dashboardUrl } = params;
+  return `
+    <div style="${baseStyle}">
+      ${headerHtml}
+      <h2 style="font-size:20px;font-weight:700;color:#0f172a;margin-bottom:6px;">Your lesson is tomorrow!</h2>
+      <p style="color:#475569;font-size:15px;line-height:1.6;margin-bottom:24px;">
+        Hi ${studentName}, just a reminder that you have a driving lesson tomorrow. Here are your details:
+      </p>
+      <div style="background:#f8fafc;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          ${row("Instructor", instructorName)}
+          ${row("Date", date)}
+          ${row("Time", `${formatHour(startHour)} – ${formatHour(startHour + 1)}`)}
+          ${row("Location", location)}
+          ${row("Car Type", carType)}
+          ${pickupAddress ? row("Pickup", pickupAddress) : ""}
+        </table>
+      </div>
+      <p style="color:#475569;font-size:14px;line-height:1.6;margin-bottom:24px;">
+        Please ensure you have your learner's permit and any required documents ready.
+        Arrive at the pickup point a few minutes early.
+      </p>
+      <a href="${dashboardUrl}" style="display:inline-block;background:#d97706;color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">
+        View Booking
+      </a>
+      <p style="color:#94a3b8;font-size:13px;margin-top:20px;">
+        Need to cancel? Visit your dashboard. Cancellations within 24 hours of the lesson are non-refundable.
+      </p>
+      ${footerHtml}
+    </div>
+  `;
+}
+
+/** 24-hour reminder sent to the instructor */
+export function getInstructorReminderEmailHtml(params: {
+  instructorName: string;
+  studentName: string;
+  studentPhone: string | null;
+  date: string;
+  startHour: number;
+  pickupAddress: string | null;
+  roadTestCenter: string | null;
+  notes: string | null;
+  dashboardUrl: string;
+}) {
+  const { instructorName, studentName, studentPhone, date, startHour, pickupAddress, roadTestCenter, notes, dashboardUrl } = params;
+  return `
+    <div style="${baseStyle}">
+      ${headerHtml}
+      <h2 style="font-size:20px;font-weight:700;color:#0f172a;margin-bottom:6px;">Lesson reminder — tomorrow</h2>
+      <p style="color:#475569;font-size:15px;line-height:1.6;margin-bottom:24px;">
+        Hi ${instructorName}, you have a confirmed lesson scheduled for tomorrow. Here's a summary:
+      </p>
+      <div style="background:#f8fafc;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          ${row("Student", studentName)}
+          ${studentPhone ? row("Phone", studentPhone) : ""}
+          ${row("Date", date)}
+          ${row("Time", `${formatHour(startHour)} – ${formatHour(startHour + 1)}`)}
+          ${pickupAddress ? row("Pickup", pickupAddress) : ""}
+          ${roadTestCenter ? row("Road Test Centre", roadTestCenter) : ""}
+          ${notes ? row("Notes", notes) : ""}
+        </table>
+      </div>
+      <a href="${dashboardUrl}" style="display:inline-block;background:#d97706;color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">
+        View in Dashboard
+      </a>
+      ${footerHtml}
+    </div>
+  `;
+}

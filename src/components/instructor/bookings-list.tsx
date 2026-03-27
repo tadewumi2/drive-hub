@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Filter, Navigation, Building2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Filter, Navigation, Building2 } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -50,6 +50,9 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
   const [filter, setFilter] = useState("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [, setTick] = useState(0);
+  // rejectingId = bookingId currently showing the reason input; null = none open
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Re-render every second so timeLeft and button visibility stay in sync
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
         : bookings.filter((b) => b.status === filter.toUpperCase());
 
   async function handleApprove(bookingId: string) {
-    setActionLoading(bookingId);
+    setActionLoading(bookingId + ":approve");
     try {
       const res = await fetch(`/api/instructor/bookings/${bookingId}/approve`, { method: "POST" });
       if (!res.ok) {
@@ -75,6 +78,29 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
         alert(data.error || "Approval failed");
         return;
       }
+      router.refresh();
+    } catch {
+      alert("Something went wrong");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleReject(bookingId: string) {
+    setActionLoading(bookingId + ":reject");
+    try {
+      const res = await fetch(`/api/instructor/bookings/${bookingId}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: rejectReason }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Rejection failed");
+        return;
+      }
+      setRejectingId(null);
+      setRejectReason("");
       router.refresh();
     } catch {
       alert("Something went wrong");
@@ -179,21 +205,65 @@ export default function InstructorBookingsList({ bookings }: { bookings: Booking
                     )}
                   </div>
 
-                  {/* Approve action — hidden once timer has expired */}
+                  {/* Approve / Reject actions — hidden once timer has expired */}
                   {b.status === "PENDING_APPROVAL" && !isExpired && (
-                    <div className="shrink-0">
-                      <button
-                        onClick={() => handleApprove(b.id)}
-                        disabled={actionLoading === b.id}
-                        className="flex items-center gap-1.5 text-sm font-medium text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === b.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="w-4 h-4" />
-                        )}
-                        Approve Booking
-                      </button>
+                    <div className="shrink-0 flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApprove(b.id)}
+                          disabled={!!actionLoading}
+                          className="flex items-center gap-1.5 text-sm font-medium text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === b.id + ":approve" ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4" />
+                          )}
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRejectingId(rejectingId === b.id ? null : b.id);
+                            setRejectReason("");
+                          }}
+                          disabled={!!actionLoading}
+                          className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Decline
+                        </button>
+                      </div>
+
+                      {/* Inline rejection reason */}
+                      {rejectingId === b.id && (
+                        <div className="flex flex-col gap-2 mt-1">
+                          <textarea
+                            rows={2}
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            placeholder="Reason for declining (optional)"
+                            className="w-full text-sm px-3 py-2 border border-red-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-200"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleReject(b.id)}
+                              disabled={!!actionLoading}
+                              className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {actionLoading === b.id + ":reject" ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : null}
+                              Confirm Decline
+                            </button>
+                            <button
+                              onClick={() => { setRejectingId(null); setRejectReason(""); }}
+                              className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

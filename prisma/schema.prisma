@@ -203,6 +203,8 @@ model Booking {
   paymentTransaction PaymentTransaction?
   review             Review?
 
+  reminderSentAt DateTime? // set after 24-hour reminder emails are sent
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
